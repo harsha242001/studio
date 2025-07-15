@@ -9,12 +9,31 @@
  */
 
 import {ai} from '@/ai/genkit';
+import {z} from 'zod';
 import {
   SuggestRechargePlansInput,
   SuggestRechargePlansInputSchema,
   SuggestRechargePlansOutput,
   SuggestRechargePlansOutputSchema,
 } from '@/ai/schemas';
+import {getLiveRechargePlans} from '@/services/telecom-service';
+
+// Define the tool for fetching live recharge plans
+const getLiveRechargePlansTool = ai.defineTool(
+  {
+    name: 'getLiveRechargePlans',
+    description: 'Get a list of currently available recharge plans from telecom providers.',
+    inputSchema: SuggestRechargePlansInputSchema,
+    outputSchema: SuggestRechargePlansOutputSchema,
+  },
+  async (input) => {
+    console.log('Using getLiveRechargePlans tool with input:', input);
+    // In a real app, this would call an external API.
+    // Here, we are calling our mock service.
+    return getLiveRechargePlans(input);
+  }
+);
+
 
 // Define the main function that will be called
 export async function suggestRechargePlans(input: SuggestRechargePlansInput): Promise<SuggestRechargePlansOutput> {
@@ -26,7 +45,14 @@ const prompt = ai.definePrompt({
   name: 'suggestRechargePlansPrompt',
   input: {schema: SuggestRechargePlansInputSchema},
   output: {schema: SuggestRechargePlansOutputSchema},
-  prompt: `You are a recharge plan recommendation expert. Based on the user's data usage and validity preferences, suggest some recharge plans.
+  tools: [getLiveRechargePlansTool],
+  prompt: `You are a recharge plan recommendation expert. 
+  
+  Your primary goal is to help the user find the best mobile recharge plan based on their needs.
+
+  IMPORTANT: First, you MUST use the 'getLiveRechargePlans' tool to fetch the latest available plans based on the user's preferences for daily data, validity, provider, and location.
+
+  Once you have the list of live plans from the tool, analyze them and present the most suitable options to the user. If the tool returns no plans, inform the user that no plans could be found for their criteria.
 
   User Preferences:
   - Daily Data Usage: {{dailyDataUsageGB}} GB/day
@@ -37,9 +63,6 @@ const prompt = ai.definePrompt({
   {{#if location}}
   - Location: {{location}}
   {{/if}}
-
-  Suggest recharge plans that closely match these preferences. Provide the plan name, price, validity, daily data, total data, other benefits, and a link to recharge the plan, if available. Focus on plans that provides close match to data usage and validity period.
-  Return the result as JSON object.
   `,
 });
 
