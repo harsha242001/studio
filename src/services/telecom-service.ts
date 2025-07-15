@@ -1,7 +1,7 @@
 import type { SuggestRechargePlansInput, SuggestRechargePlansOutput } from '@/ai/schemas';
 
 // This is a mock database of available recharge plans.
-// In a real-world application, this data would come from an external API.
+// In a real-world application, this data would come from an external API or a web scraper.
 const MOCK_PLANS: SuggestRechargePlansOutput['suggestedPlans'] = [
   // 28 Day Plans
   { planName: 'Freedom Plan 28', price: 299, validity: 28, dailyData: 1.5, totalData: 42, otherBenefits: 'Unlimited Calls, 100 SMS/day, JioTV, JioCinema', rechargeLink: '#' },
@@ -24,8 +24,8 @@ const MOCK_PLANS: SuggestRechargePlansOutput['suggestedPlans'] = [
 
 
 /**
- * Simulates fetching live recharge plans from a telecom provider's API.
- * It filters the mock database based on user preferences.
+ * Fetches live recharge plans. This function is designed to be replaced with
+ * a real implementation that scrapes data from provider websites.
  * @param input - The user's preferences for recharge plans.
  * @returns A promise that resolves to the suggested plans.
  */
@@ -34,22 +34,33 @@ export async function getLiveRechargePlans(
 ): Promise<SuggestRechargePlansOutput> {
   console.log('Filtering plans based on input:', input);
   
+  // =================================================================
+  // DEVELOPER TO-DO: Implement real-time data fetching here.
+  //
+  // This is the place to add your web scraping logic using libraries
+  // like Puppeteer or Cheerio. You would scrape the websites of
+  // telecom providers (Jio, Airtel, etc.) to get live plan data.
+  //
+  // The scraped data should be transformed into the same format as
+  // the `MOCK_PLANS` above. The `input` object contains the user's
+  // preferences which you can use to guide your scraping or filtering.
+  //
+  // For now, this function uses mock data for demonstration.
+  // =================================================================
+
   const { dailyDataUsageGB, validityDays } = input;
 
-  // Simple filtering logic:
-  // Find plans that match the validity period exactly.
-  // Then, from those, find plans where the daily data is greater than or equal to the user's request.
+  // Current logic filters the MOCK_PLANS.
+  // Replace this with your own logic that processes the scraped data.
   const filteredPlans = MOCK_PLANS.filter(plan => {
     const validityMatch = plan.validity === validityDays;
     const dataMatch = plan.dailyData >= dailyDataUsageGB;
     return validityMatch && dataMatch;
   });
 
-  // Sort by price to show the cheapest matching plan first.
   const sortedPlans = filteredPlans.sort((a, b) => a.price - b.price);
 
   console.log(`Found ${sortedPlans.length} matching plans.`);
 
-  // To make it more realistic, we'll return a maximum of 3 plans.
   return { suggestedPlans: sortedPlans.slice(0, 3) };
 }
