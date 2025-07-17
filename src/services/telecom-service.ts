@@ -1,36 +1,33 @@
+'use server';
+
 import type { SuggestRechargePlansInput, SuggestRechargePlansOutput } from '@/ai/schemas';
 
-// This is a mock database of available recharge plans.
-// In a real-world application, this data would come from an external API or a web scraper.
+// This is a database of available recharge plans based on user-provided data.
+// In a real-world application, this data could come from a live API or a web scraper.
 const MOCK_PLANS: (SuggestRechargePlansOutput['suggestedPlans'][0] & { provider: string })[] = [
-  // Jio Plans
-  { provider: 'Jio', planName: 'Freedom Plan 28', price: 299, validity: 28, dailyData: 1.5, totalData: 42, otherBenefits: 'Unlimited Calls, 100 SMS/day, JioTV, JioCinema', rechargeLink: '#' },
-  { provider: 'Jio', planName: 'Data-Max 28', price: 399, validity: 28, dailyData: 2.5, totalData: 70, otherBenefits: 'Unlimited Calls, 100 SMS/day, JioTV, JioCinema, JioCloud', rechargeLink: '#' },
-  { provider: 'Jio', planName: 'Power User 28', price: 449, validity: 28, dailyData: 3, totalData: 84, otherBenefits: 'Unlimited Calls, 100 SMS/day, Disney+ Hotstar Mobile for 3 months', rechargeLink: '#' },
-  { provider: 'Jio', planName: 'Freedom Plan 56', price: 533, validity: 56, dailyData: 1.5, totalData: 84, otherBenefits: 'Unlimited Calls, 100 SMS/day, JioTV, JioCinema', rechargeLink: '#' },
-  { provider: 'Jio', planName: 'Data-Max 56', price: 666, validity: 56, dailyData: 2, totalData: 112, otherBenefits: 'Unlimited Calls, 100 SMS/day, JioTV, JioCinema, JioCloud', rechargeLink: '#' },
-  { provider: 'Jio', planName: 'Value Pack 84', price: 719, validity: 84, dailyData: 2, totalData: 168, otherBenefits: 'Unlimited Calls, 100 SMS/day, JioTV, JioCinema', rechargeLink: '#' },
-  { provider: 'Jio', planName: 'Super Saver 84', price: 899, validity: 84, dailyData: 2.5, totalData: 210, otherBenefits: 'Unlimited Calls, 100 SMS/day, Disney+ Hotstar Mobile', rechargeLink: '#' },
-  { provider: 'Jio', planName: 'Mega Data 84', price: 1066, validity: 84, dailyData: 3, totalData: 252, otherBenefits: 'Unlimited Calls, 100 SMS/day, JioTV, JioCinema, JioCloud', rechargeLink: '#' },
-  { provider: 'Jio', planName: 'Annual Saver', price: 2879, validity: 365, dailyData: 2, totalData: 730, otherBenefits: 'Unlimited Calls, 100 SMS/day, JioTV, JioCinema', rechargeLink: '#' },
-  { provider: 'Jio', planName: 'Annual Data Pro', price: 3119, validity: 365, dailyData: 2.5, totalData: 912.5, otherBenefits: 'Unlimited Calls, 100 SMS/day, Disney+ Hotstar Mobile for 1 year', rechargeLink: '#' },
-
-  // Real Airtel Plans from spreadsheet
-  { provider: 'Airtel', planName: 'Airtel Annual Unlimited', price: 1799, validity: 365, dailyData: 0.06, totalData: 24, otherBenefits: 'Unlimited Calls, 3600 SMS, Apollo 24|7 Circle, Wynk Music', rechargeLink: '#' },
-  { provider: 'Airtel', planName: 'Airtel 84 Day Unlimited', price: 999, validity: 84, dailyData: 2.5, totalData: 210, otherBenefits: 'Unlimited 5G Data, Airtel Xstream Play, Apollo 24|7 Circle', rechargeLink: '#' },
-  { provider: 'Airtel', planName: 'Airtel 84 Day Hotstar', price: 839, validity: 84, dailyData: 2, totalData: 168, otherBenefits: 'Unlimited 5G Data, Disney+ Hotstar Mobile for 3 Months, Airtel Xstream Play', rechargeLink: '#' },
-  { provider: 'Airtel', planName: 'Airtel 84 Day Value', price: 719, validity: 84, dailyData: 1.5, totalData: 126, otherBenefits: 'Unlimited 5G Data, Airtel Xstream Play, RewardsMini Subscription', rechargeLink: '#' },
-  { provider: 'Airtel', planName: 'Airtel 56 Day Prime', price: 699, validity: 56, dailyData: 3, totalData: 168, otherBenefits: 'Unlimited 5G Data, Amazon Prime Membership, Airtel Xstream Play', rechargeLink: '#' },
-  { provider: 'Airtel', planName: 'Airtel 77 Day Unlimited', price: 666, validity: 77, dailyData: 1.5, totalData: 115.5, otherBenefits: 'Unlimited 5G Data, Apollo 24|7 Circle, Wynk Music', rechargeLink: '#' },
-  { provider: 'Airtel', planName: 'Airtel 56 Day Hotstar', price: 599, validity: 56, dailyData: 3, totalData: 168, otherBenefits: 'Unlimited 5G Data, Disney+ Hotstar Mobile, Airtel Xstream Play', rechargeLink: '#' },
-  { provider: 'Airtel', planName: 'Airtel 56 Day Unlimited', price: 549, validity: 56, dailyData: 2, totalData: 112, otherBenefits: 'Unlimited 5G Data, Airtel Xstream Play, Apollo 24|7 Circle', rechargeLink: '#' },
-  { provider: 'Airtel', planName: 'Airtel 28 Day Unlimited', price: 499, validity: 28, dailyData: 3, totalData: 84, otherBenefits: 'Unlimited 5G Data, Disney+ Hotstar Mobile for 3 Months, Airtel Xstream Play', rechargeLink: '#' },
-  { provider: 'Airtel', planName: 'Airtel 28 Day Data', price: 359, validity: 28, dailyData: 2.5, totalData: 70, otherBenefits: 'Unlimited 5G Data, Airtel Xstream Play for 28 days', rechargeLink: '#' },
-  { provider: 'Airtel', planName: 'Airtel 28 Day Value', price: 299, validity: 28, dailyData: 1.5, totalData: 42, otherBenefits: 'Unlimited 5G Data, Apollo 24|7 Circle, Wynk Music', rechargeLink: '#' },
-  { provider: 'Airtel', planName: 'Airtel 28 Day Basic', price: 265, validity: 28, dailyData: 1, totalData: 28, otherBenefits: 'Unlimited 5G Data, Wynk Music Free', rechargeLink: '#' },
-  { provider: 'Airtel', planName: 'Airtel 28 Day Starter', price: 239, validity: 28, dailyData: 1, totalData: 28, otherBenefits: 'Unlimited Calls, 100 SMS/Day, Wynk Music', rechargeLink: '#' },
-  { provider: 'Airtel', planName: 'Airtel 24 Day Starter', price: 209, validity: 24, dailyData: 1, totalData: 24, otherBenefits: 'Unlimited Calls, 100 SMS/Day, Wynk Music', rechargeLink: '#' },
-  { provider: 'Airtel', planName: 'Airtel 28 Day Base', price: 179, validity: 28, dailyData: 0.07, totalData: 2, otherBenefits: 'Unlimited Calls, 300 SMS, Wynk Music', rechargeLink: '#' }
+  // Plans from user-provided screenshot
+  { provider: 'Jio', planName: 'Netflix Premium', price: 1798, validity: 84, dailyData: 3, totalData: 252, otherBenefits: 'Netflix Basic, Unlimited 5G Data', rechargeLink: '#' },
+  { provider: 'Jio', planName: 'Hotstar Super', price: 1729, validity: 84, dailyData: 2, totalData: 168, otherBenefits: 'Netflix Basic, JioHotstar Super', rechargeLink: '#' },
+  { provider: 'Airtel', planName: 'Prime Lite Pack', price: 1199, validity: 84, dailyData: 2.5, totalData: 210, otherBenefits: 'Amazon Prime Lite, Unlimited 5G Data', rechargeLink: '#' },
+  { provider: 'Jio', planName: 'Jio Hotstar 84D', price: 1029, validity: 84, dailyData: 2, totalData: 168, otherBenefits: 'JioHotstar Mobile for 3 months, Unlimited 5G Data', rechargeLink: '#' },
+  { provider: 'Airtel', planName: 'Xstream Play 84D', price: 979, validity: 84, dailyData: 2, totalData: 168, otherBenefits: 'Airtel Xstream Play Premium (includes 22+ OTTs), Unlimited 5G Data', rechargeLink: '#' },
+  { provider: 'Airtel', planName: 'Prime Lite 56D', price: 838, validity: 56, dailyData: 3, totalData: 168, otherBenefits: 'Amazon Prime Lite, Unlimited 5G Data', rechargeLink: '#' },
+  { provider: 'Jio', planName: 'Netflix Basic 28D', price: 598, validity: 28, dailyData: 2, totalData: 56, otherBenefits: 'Netflix Basic, JioHotstar Super', rechargeLink: '#' },
+  { provider: 'Airtel', planName: 'Xstream Play 28D', price: 449, validity: 28, dailyData: 3, totalData: 84, otherBenefits: 'Airtel Xstream Play Premium (includes 22+ OTTs), Unlimited 5G Data', rechargeLink: '#' },
+  { provider: 'Jio', planName: 'Jio Hotstar 28D', price: 398, validity: 28, dailyData: 2, totalData: 56, otherBenefits: 'JioHotstar Mobile for 28 days, Unlimited 5G Data', rechargeLink: '#' },
+  { provider: 'Airtel', planName: 'Annual 2GB/Day', price: 3599, validity: 365, dailyData: 2, totalData: 730, otherBenefits: 'Unlimited 5G Data, India\'s 1st Spam Fighting Network', rechargeLink: '#' },
+  { provider: 'Jio', planName: 'Jio Hotstar Annual', price: 3999, validity: 365, dailyData: 2.5, totalData: 912.5, otherBenefits: 'JioHotstar Mobile for 1 year, Unlimited 5G Data', rechargeLink: '#' },
+  { provider: 'Airtel', planName: 'Value Pack 90D', price: 929, validity: 90, dailyData: 1.5, totalData: 135, otherBenefits: 'India\'s 1st Spam Fighting Network, Watch free TV shows, Movies, Live channels and much more', rechargeLink: '#' },
+  { provider: 'Airtel', planName: 'RewardsMini 84D', price: 859, validity: 84, dailyData: 1.5, totalData: 126, otherBenefits: 'RewardsMini Subscription', rechargeLink: '#' },
+  { provider: 'Airtel', planName: 'HelloTunes 77D', price: 799, validity: 77, dailyData: 1.5, totalData: 115.5, otherBenefits: 'Free hellotunes for you', rechargeLink: '#' },
+  { provider: 'Airtel', planName: 'Data Pack 56D', price: 649, validity: 56, dailyData: 2, totalData: 112, otherBenefits: 'Unlimited 5G Data, India\'s 1st Spam Fighting Network', rechargeLink: '#' },
+  { provider: 'Airtel', planName: 'Data Pack 60D', price: 619, validity: 60, dailyData: 1.5, totalData: 90, otherBenefits: 'India\'s 1st Spam Fighting Network, Watch free TV shows, Movies, Live channels and much more', rechargeLink: '#' },
+  { provider: 'Airtel', planName: 'Data Pack 56D', price: 579, validity: 56, dailyData: 1.5, totalData: 84, otherBenefits: 'Watch free TV shows, Movies, Live channels and much more', rechargeLink: '#' },
+  { provider: 'Airtel', planName: 'Monthly 2.5GB', price: 429, validity: 30, dailyData: 2.5, totalData: 75, otherBenefits: 'Unlimited 5G Data, India\'s 1st Spam Fighting Network', rechargeLink: '#' },
+  { provider: 'Airtel', planName: 'Monthly 2GB', price: 379, validity: 30, dailyData: 2, totalData: 60, otherBenefits: 'India\'s 1st Spam Fighting Network', rechargeLink: '#' },
+  { provider: 'Airtel', planName: 'HelloTunes 28D', price: 349, validity: 28, dailyData: 1.5, totalData: 42, otherBenefits: 'Free hellotunes for you', rechargeLink: '#' },
+  { provider: 'Airtel', planName: 'HelloTunes 28D 1GB', price: 299, validity: 28, dailyData: 1, totalData: 28, otherBenefits: 'Free hellotunes for you', rechargeLink: '#' },
+  { provider: 'Airtel', planName: 'Basic 24D', price: 249, validity: 24, dailyData: 1, totalData: 24, otherBenefits: 'Watch free TV shows, Movies, Live channels and much more', rechargeLink: '#' },
 ];
 
 
