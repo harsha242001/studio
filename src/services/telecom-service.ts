@@ -61,23 +61,25 @@ export async function getLiveRechargePlans(
 
   const { dailyDataUsageGB, validityDays, telecomProvider } = input;
 
-  // Current logic filters the MOCK_PLANS.
-  // Replace this with your own logic that processes the scraped data.
-  const filteredPlans = MOCK_PLANS.filter(plan => {
-    const providerMatch = plan.provider.toLowerCase() === telecomProvider.toLowerCase();
-    
-    // Find a validity that's close to the user's preference
-    const validityMatch = plan.validity >= validityDays && plan.validity < validityDays + 15;
-    
-    // For daily plans, check against daily data. For total data plans, do a rough equivalent check.
-    const dataMatch = plan.dailyData > 0 
-      ? plan.dailyData >= dailyDataUsageGB
-      : (plan.totalData / plan.validity) >= dailyDataUsageGB;
+  const filteredByProvider = MOCK_PLANS.filter(
+    plan => plan.provider.toLowerCase() === telecomProvider.toLowerCase()
+  );
 
-    return providerMatch && validityMatch && dataMatch;
+  if (filteredByProvider.length === 0) {
+    return { suggestedPlans: [] };
+  }
+  
+  const scoredPlans = filteredByProvider.map(plan => {
+    const validityDiff = Math.abs(plan.validity - validityDays);
+    const dataDiff = Math.abs(plan.dailyData - dailyDataUsageGB);
+
+    // Lower score is better. Give more weight to data preference.
+    const score = validityDiff * 0.3 + dataDiff * 0.7;
+
+    return { ...plan, score };
   });
 
-  const sortedPlans = filteredPlans.sort((a, b) => a.price - b.price);
+  const sortedPlans = scoredPlans.sort((a, b) => a.score - b.score);
 
   console.log(`Found ${sortedPlans.length} matching plans for ${telecomProvider}.`);
 
