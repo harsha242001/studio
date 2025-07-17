@@ -67,11 +67,13 @@ export async function getLiveRechargePlans(
   }
   
   const scoredPlans = filteredByProvider.map(plan => {
-    const validityDiff = Math.abs(plan.validity - validityDays);
-    const dataDiff = Math.abs(plan.dailyData - dailyDataUsageGB);
+    // Calculate the "distance" from the user's preferences. Lower is better.
+    // We penalize plans that are "less than" what the user asked for more heavily.
+    const validityDiff = plan.validity >= validityDays ? (plan.validity - validityDays) * 0.5 : (validityDays - plan.validity) * 2;
+    const dataDiff = plan.dailyData >= dailyDataUsageGB ? (plan.dailyData - dailyDataUsageGB) : (dailyDataUsageGB - plan.dailyData) * 2;
 
-    // Lower score is better. Give more weight to data preference.
-    const score = validityDiff * 0.3 + dataDiff * 0.7;
+    // We give slightly more weight to matching the data preference.
+    const score = validityDiff * 0.4 + dataDiff * 0.6;
 
     return { ...plan, score };
   });
