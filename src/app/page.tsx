@@ -9,10 +9,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { RechargeForm } from '@/components/recharge-form';
 import { PlanCard } from '@/components/plan-card';
 import { PlanSkeleton } from '@/components/plan-skeleton';
-import { WifiOff } from 'lucide-react';
+import { WifiOff, BrainCircuit } from 'lucide-react';
 
 export default function Home() {
   const [suggestedPlans, setSuggestedPlans] = useState<SuggestRechargePlansOutput['suggestedPlans'] | null>(null);
+  const [valueForMoneyPlans, setValueForMoneyPlans] = useState<SuggestRechargePlansOutput['valueForMoneyPlans'] | null>(null);
   const [rawOutput, setRawOutput] = useState<SuggestRechargePlansOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
@@ -20,6 +21,7 @@ export default function Home() {
   const handleFormSubmit = async (data: SuggestRechargePlansInput) => {
     setIsLoading(true);
     setSuggestedPlans(null);
+    setValueForMoneyPlans(null);
     setRawOutput(null);
     try {
       const result = await suggestRechargePlans(data);
@@ -29,6 +31,12 @@ export default function Home() {
       } else {
         setSuggestedPlans([]);
       }
+      if (result.valueForMoneyPlans && result.valueForMoneyPlans.length > 0) {
+        setValueForMoneyPlans(result.valueForMoneyPlans);
+      } else {
+        setValueForMoneyPlans([]);
+      }
+
     } catch (error) {
       console.error(error);
       toast({
@@ -51,11 +59,11 @@ export default function Home() {
           </p>
         </header>
 
-        <main className="max-w-2xl mx-auto">
+        <main className="max-w-4xl mx-auto">
           <Card className="shadow-lg">
             <CardHeader>
               <CardTitle className="text-2xl">Tell us what you need</CardTitle>
-              <CardDescription>We'll find the best plans for you.</CardDescription>
+              <CardDescription>We'll find the best plans for you, plus some smart deals!</CardDescription>
             </CardHeader>
             <CardContent>
               <RechargeForm onSubmit={handleFormSubmit} isLoading={isLoading} />
@@ -70,6 +78,23 @@ export default function Home() {
               </div>
             )}
 
+            {!isLoading && valueForMoneyPlans && valueForMoneyPlans.length > 0 && (
+              <div className="mb-12">
+                <div className="text-center mb-6">
+                  <h2 className="text-2xl font-bold inline-flex items-center gap-2">
+                    <BrainCircuit className="h-8 w-8 text-accent" />
+                    Smart Suggestions for Long-Term Value
+                  </h2>
+                   <p className="text-muted-foreground mt-1">These plans could save you money over time.</p>
+                </div>
+                <div className="grid gap-6 md:grid-cols-2">
+                  {valueForMoneyPlans.map((plan, index) => (
+                    <PlanCard key={index} plan={plan} isFeatured={true} />
+                  ))}
+                </div>
+              </div>
+            )}
+
             {!isLoading && suggestedPlans && suggestedPlans.length > 0 && (
               <>
                 <h2 className="text-2xl font-bold text-center mb-6">Here are your suggested plans:</h2>
@@ -81,7 +106,7 @@ export default function Home() {
               </>
             )}
             
-            {!isLoading && suggestedPlans && suggestedPlans.length === 0 && (
+            {!isLoading && suggestedPlans?.length === 0 && valueForMoneyPlans?.length === 0 && (
                 <div className="text-center py-12">
                     <div className="inline-flex items-center justify-center bg-secondary text-secondary-foreground rounded-full p-4 mb-4">
                         <WifiOff className="h-10 w-10"/>

@@ -9,7 +9,6 @@
  */
 
 import {ai} from '@/ai/genkit';
-import {z} from 'zod';
 import {
   SuggestRechargePlansInput,
   SuggestRechargePlansInputSchema,
@@ -27,8 +26,7 @@ const getLiveRechargePlansTool = ai.defineTool(
     outputSchema: SuggestRechargePlansOutputSchema,
   },
   async (input) => {
-    // In a real app, this would call an external API or a web scraper.
-    // Here, we are calling our mock service which contains the real data.
+    // This calls our service to get scored and sorted plans.
     return getLiveRechargePlans(input);
   }
 );
@@ -45,23 +43,35 @@ const prompt = ai.definePrompt({
   input: {schema: SuggestRechargePlansInputSchema},
   output: {schema: SuggestRechargePlansOutputSchema},
   tools: [getLiveRechargePlansTool],
-  prompt: `You are a recharge plan recommendation expert. 
-  
-  Your primary goal is to help the user find the best mobile recharge plan based on their needs.
-
-  IMPORTANT: First, you MUST use the 'getLiveRechargePlans' tool to fetch the latest available plans based on the user's preferences for daily data, validity, provider, and location.
-
-  Once you have the list of live plans from the tool, analyze them and present the most suitable options to the user. If the tool returns no plans, inform the user that no plans could be found for their criteria.
+  prompt: `You are a recharge plan recommendation expert. Your goal is to help users find the best mobile recharge plan and uncover significant long-term savings.
 
   User Preferences:
   - Daily Data Usage: {{dailyDataUsageGB}} GB/day
   - Validity: {{validityDays}} days
-  {{#if telecomProvider}}
   - Telecom Provider: {{telecomProvider}}
-  {{/if}}
   {{#if location}}
   - Location: {{location}}
   {{/if}}
+
+  Follow these steps carefully:
+
+  Step 1: Fetch Available Plans
+  You MUST use the 'getLiveRechargePlans' tool to fetch a list of relevant plans based on the user's preferences. The tool will return a list of plans that are already sorted by relevance.
+
+  Step 2: Identify Direct Matches
+  From the tool's output, select up to 3 plans that are the closest direct match to the user's request for data and validity. Populate the 'suggestedPlans' list with these.
+
+  Step 3: Perform Value-for-Money Analysis (AI INTELLIGENCE)
+  This is the most important step. Analyze all plans returned by the tool to find "hidden gems" that offer better long-term value.
+  - Look for annual (365 days) or other long-validity plans.
+  - Take a direct match plan (e.g., a 28-day plan) and calculate its total cost over a year. For example, if a 28-day plan costs ₹299, the annual cost would be approximately (365 / 28) * 299.
+  - Compare this calculated annual cost to the price of an actual annual plan.
+  - If the annual plan is cheaper AND offers similar or better benefits (like more daily data), it is a superior value-for-money option.
+
+  Step 4: Populate Value-for-Money Suggestions
+  - If you find one or two plans that offer significant long-term savings, add them to the 'valueForMoneyPlans' list.
+  - For each plan in this list, you MUST write a clear 'reasoning' statement. Explain the long-term benefit and the potential savings. For example: "This annual plan costs ₹3599, saving you over ₹280 compared to recharging the ₹299 monthly plan for a year, and you get more data!".
+  - Do NOT add plans to this list unless they offer a clear, significant financial advantage over time.
   `,
 });
 
