@@ -4,7 +4,7 @@ import {z} from 'zod';
 export const SuggestRechargePlansInputSchema = z.object({
   dailyDataUsageGB: z.number().describe('The amount of data the user needs per day, in GB.'),
   validityDays: z.number().describe('The desired validity period for the recharge plan, in days.'),
-  telecomProvider: z.string().optional().describe('The telecom provider (e.g., Jio, Airtel, Vodafone).'),
+  telecomProvider: z.string().describe('The telecom provider (e.g., Jio, Airtel).'),
   location: z.string().optional().describe('The user’s location to filter plans.'),
 });
 export type SuggestRechargePlansInput = z.infer<typeof SuggestRechargePlansInputSchema>;
@@ -13,6 +13,7 @@ export type SuggestRechargePlansInput = z.infer<typeof SuggestRechargePlansInput
 export const SuggestRechargePlansOutputSchema = z.object({
   suggestedPlans: z.array(
     z.object({
+      provider: z.string().describe('The telecom provider of the plan.'),
       planName: z.string().describe('The name of the recharge plan.'),
       price: z.number().describe('The price of the recharge plan.'),
       validity: z.number().describe('The validity period of the plan, in days.'),

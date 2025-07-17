@@ -16,9 +16,12 @@ export function PlanCard({ plan }: PlanCardProps) {
   return (
     <Card className="flex flex-col justify-between shadow-md hover:shadow-xl transition-shadow duration-300">
       <CardHeader>
-        <CardTitle className="text-xl font-bold">{plan.planName}</CardTitle>
+        <div className="flex justify-between items-start">
+            <CardTitle className="text-xl font-bold">{plan.planName}</CardTitle>
+            <Badge variant={plan.provider === 'Jio' ? 'default' : 'secondary'}>{plan.provider}</Badge>
+        </div>
         {plan.otherBenefits && (
-          <CardDescription className="line-clamp-2">{plan.otherBenefits}</CardDescription>
+          <CardDescription className="line-clamp-2 pt-2">{plan.otherBenefits}</CardDescription>
         )}
       </CardHeader>
       <CardContent className="space-y-4">

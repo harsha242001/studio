@@ -15,6 +15,7 @@ import type { SuggestRechargePlansInput } from '@/ai/schemas';
 export const rechargeFormSchema = SuggestRechargePlansInputSchema.extend({
   dailyDataUsageGB: z.coerce.number().min(0.1, { message: 'Please select a data amount.' }),
   validityDays: z.coerce.number().min(1, { message: 'Please select a validity period.' }),
+  telecomProvider: z.string().min(1, { message: 'Please select a provider.' }),
 });
 
 export type RechargeFormValues = z.infer<typeof rechargeFormSchema>;
@@ -26,6 +27,7 @@ interface RechargeFormProps {
 
 const dataOptions = ['1', '1.5', '2', '3'];
 const validityOptions = ['28', '56', '84', '365'];
+const providerOptions = ['Airtel', 'Jio'];
 
 export function RechargeForm({ onSubmit, isLoading }: RechargeFormProps) {
   const form = useForm<RechargeFormValues>({
@@ -41,6 +43,57 @@ export function RechargeForm({ onSubmit, isLoading }: RechargeFormProps) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <FormField
+            control={form.control}
+            name="telecomProvider"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="font-semibold">Telecom Provider</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a provider" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {providerOptions.map((option) => (
+                      <SelectItem key={option} value={option}>
+                        {option}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+           <FormField
+            control={form.control}
+            name="validityDays"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="font-semibold">Preferred Validity</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={String(field.value)}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select validity period" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {validityOptions.map((option) => (
+                      <SelectItem key={option} value={option}>
+                        {option} days
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
         <FormField
           control={form.control}
           name="dailyDataUsageGB"
@@ -67,48 +120,8 @@ export function RechargeForm({ onSubmit, isLoading }: RechargeFormProps) {
             </FormItem>
           )}
         />
-
+        
         <FormField
-          control={form.control}
-          name="validityDays"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="font-semibold">What's your preferred validity?</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={String(field.value)}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select validity period" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {validityOptions.map((option) => (
-                    <SelectItem key={option} value={option}>
-                      {option} days
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <FormField
-            control={form.control}
-            name="telecomProvider"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Telecom Provider (Optional)</FormLabel>
-                <FormControl>
-                  <Input placeholder="e.g. Jio, Airtel" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
             control={form.control}
             name="location"
             render={({ field }) => (
@@ -121,7 +134,6 @@ export function RechargeForm({ onSubmit, isLoading }: RechargeFormProps) {
               </FormItem>
             )}
           />
-        </div>
 
         <Button
           type="submit"
