@@ -13,14 +13,17 @@ import { WifiOff } from 'lucide-react';
 
 export default function Home() {
   const [suggestedPlans, setSuggestedPlans] = useState<SuggestRechargePlansOutput['suggestedPlans'] | null>(null);
+  const [rawOutput, setRawOutput] = useState<SuggestRechargePlansOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
   const handleFormSubmit = async (data: SuggestRechargePlansInput) => {
     setIsLoading(true);
     setSuggestedPlans(null);
+    setRawOutput(null);
     try {
       const result = await suggestRechargePlans(data);
+      setRawOutput(result); // Store raw output for debugging
       if (result.suggestedPlans && result.suggestedPlans.length > 0) {
         setSuggestedPlans(result.suggestedPlans);
       } else {
@@ -89,6 +92,20 @@ export default function Home() {
             )}
           </div>
         </main>
+
+        {rawOutput && (
+          <Card className="mt-8 max-w-4xl mx-auto">
+            <CardHeader>
+              <CardTitle>Debug Output</CardTitle>
+              <CardDescription>Raw data returned from the backend logic.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <pre className="p-4 bg-secondary rounded-md text-xs overflow-auto">
+                {JSON.stringify(rawOutput, null, 2)}
+              </pre>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );
