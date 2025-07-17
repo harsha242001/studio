@@ -1,8 +1,8 @@
 'use server';
 
-import type { SuggestRechargePlansInput, SuggestRechargePlansOutput } from '@/ai/schemas';
+import type { SuggestRechargePlansInput, Plan } from '@/ai/schemas';
 
-const MOCK_PLANS: (SuggestRechargePlansOutput['suggestedPlans'][0] & { provider: string })[] = [
+const MOCK_PLANS: Plan[] = [
   // Jio Plans
   { provider: 'Jio', planName: 'Netflix Premium', price: 1798, validity: 84, dailyData: 3, totalData: 252, otherBenefits: 'Netflix Basic, Unlimited 5G Data' },
   { provider: 'Jio', planName: 'Hotstar Super', price: 1729, validity: 84, dailyData: 2, totalData: 168, otherBenefits: 'Netflix Basic, JioHotstar Super' },
@@ -34,7 +34,7 @@ const MOCK_PLANS: (SuggestRechargePlansOutput['suggestedPlans'][0] & { provider:
 
 export async function getLiveRechargePlans(
   input: SuggestRechargePlansInput
-): Promise<SuggestRechargePlansOutput> {
+): Promise<Plan[]> {
   console.log('Filtering plans based on input:', input);
 
   const { dailyDataUsageGB, validityDays, telecomProvider } = input;
@@ -46,17 +46,20 @@ export async function getLiveRechargePlans(
     .map(plan => {
       // Lower score is better. 0 is a perfect match.
       
-      // Calculate difference for validity. 
-      // A plan with less validity is penalized more heavily.
+      // Calculate difference for validity. We prefer plans with >= validity.
+      // Plans with much higher validity are penalized slightly to prefer closer matches.
       const validityDiff = plan.validity - validityDays;
-      const validityScore = validityDiff >= 0 ? validityDiff * 0.5 : Math.abs(validityDiff) * 5;
+      const validityScore = validityDiff >= 0 
+        ? validityDiff * 0.1 // Small penalty for more validity
+        : Math.abs(validityDiff) * 10; // Big penalty for less validity
 
-      // Calculate difference for data.
-      // A plan with less data is penalized more heavily.
+      // Calculate difference for data. We prefer plans with >= data.
       const dataDiff = plan.dailyData - dailyDataUsageGB;
-      const dataScore = dataDiff >= 0 ? dataDiff * 1 : Math.abs(dataDiff) * 10;
+      const dataScore = dataDiff >= 0 
+        ? dataDiff * 1 // Prefer more data, but not excessively
+        : Math.abs(dataDiff) * 20; // Big penalty for less data
       
-      // Total score. Data is slightly more important than validity.
+      // Total score.
       const score = validityScore + dataScore;
 
       return { ...plan, score };
@@ -67,6 +70,6 @@ export async function getLiveRechargePlans(
 
   console.log(`Found ${sortedPlans.length} matching plans for ${telecomProvider}. Top plan:`, sortedPlans[0]);
 
-  // We return all sorted plans for debugging, but the AI will present the top ones.
-  return { suggestedPlans: sortedPlans };
+  // Return all sorted plans for the AI to analyze
+  return sortedPlans;
 }

@@ -9,7 +9,7 @@ export const SuggestRechargePlansInputSchema = z.object({
 });
 export type SuggestRechargePlansInput = z.infer<typeof SuggestRechargePlansInputSchema>;
 
-const PlanSchema = z.object({
+export const PlanSchema = z.object({
   provider: z.string().describe('The telecom provider of the plan.'),
   planName: z.string().describe('The name of the recharge plan.'),
   price: z.number().describe('The price of the recharge plan.'),
@@ -19,6 +19,8 @@ const PlanSchema = z.object({
   otherBenefits: z.string().optional().describe('Other benefits offered by the plan.'),
   rechargeLink: z.string().optional().describe('The link to recharge the plan.'),
 });
+export type Plan = z.infer<typeof PlanSchema>;
+
 
 // Define the output schema for the flow
 export const SuggestRechargePlansOutputSchema = z.object({

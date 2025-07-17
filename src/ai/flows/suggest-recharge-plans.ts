@@ -14,20 +14,28 @@ import {
   SuggestRechargePlansInputSchema,
   SuggestRechargePlansOutput,
   SuggestRechargePlansOutputSchema,
+  PlanSchema
 } from '@/ai/schemas';
 import {getLiveRechargePlans} from '@/services/telecom-service';
+import { z } from 'zod';
+
+// Define the schema for the tool's output, which is just an array of all available plans
+const AllPlansSchema = z.object({
+  plans: z.array(PlanSchema),
+});
 
 // Define the tool for fetching live recharge plans
 const getLiveRechargePlansTool = ai.defineTool(
   {
     name: 'getLiveRechargePlans',
-    description: 'Get a list of currently available recharge plans from telecom providers.',
+    description: 'Get a list of currently available recharge plans from telecom providers based on user preferences.',
     inputSchema: SuggestRechargePlansInputSchema,
-    outputSchema: SuggestRechargePlansOutputSchema,
+    outputSchema: AllPlansSchema,
   },
   async (input) => {
     // This calls our service to get scored and sorted plans.
-    return getLiveRechargePlans(input);
+    const plans = await getLiveRechargePlans(input);
+    return { plans };
   }
 );
 
@@ -56,22 +64,24 @@ const prompt = ai.definePrompt({
   Follow these steps carefully:
 
   Step 1: Fetch Available Plans
-  You MUST use the 'getLiveRechargePlans' tool to fetch a list of relevant plans based on the user's preferences. The tool will return a list of plans that are already sorted by relevance.
+  You MUST use the 'getLiveRechargePlans' tool to fetch a list of relevant plans based on the user's preferences. The tool will return a list of all available plans that are sorted by relevance.
 
-  Step 2: Identify Direct Matches
-  From the tool's output, select up to 3 plans that are the closest direct match to the user's request for data and validity. Populate the 'suggestedPlans' list with these.
+  Step 2: Identify Direct Matches from Tool Output
+  From the tool's output, select up to 3 plans that are the closest direct match to the user's request for data and validity. Populate the 'suggestedPlans' list with these. These should be the top results from the tool's response.
 
   Step 3: Perform Value-for-Money Analysis (AI INTELLIGENCE)
-  This is the most important step. Analyze all plans returned by the tool to find "hidden gems" that offer better long-term value.
+  This is the most important step. Analyze ALL plans returned by the tool to find "hidden gems" that offer better long-term value.
   - Look for annual (365 days) or other long-validity plans.
   - Take a direct match plan (e.g., a 28-day plan) and calculate its total cost over a year. For example, if a 28-day plan costs ₹299, the annual cost would be approximately (365 / 28) * 299.
-  - Compare this calculated annual cost to the price of an actual annual plan.
+  - Compare this calculated annual cost to the price of an actual annual plan from the tool output.
   - If the annual plan is cheaper AND offers similar or better benefits (like more daily data), it is a superior value-for-money option.
 
   Step 4: Populate Value-for-Money Suggestions
   - If you find one or two plans that offer significant long-term savings, add them to the 'valueForMoneyPlans' list.
   - For each plan in this list, you MUST write a clear 'reasoning' statement. Explain the long-term benefit and the potential savings. For example: "This annual plan costs ₹3599, saving you over ₹280 compared to recharging the ₹299 monthly plan for a year, and you get more data!".
-  - Do NOT add plans to this list unless they offer a clear, significant financial advantage over time.
+  - Do NOT add plans to this list unless they offer a clear, financial advantage over time.
+
+  You must populate the final output based on your analysis of the data provided by the 'getLiveRechargePlans' tool.
   `,
 });
 
@@ -87,7 +97,11 @@ const suggestRechargePlansFlow = ai.defineFlow(
     for (let i = 0; i < maxRetries; i++) {
       try {
         const {output} = await prompt(input);
-        return output!;
+        if (output && (output.suggestedPlans.length > 0 || output.valueForMoneyPlans.length > 0)) {
+          return output;
+        }
+        // If the output is empty, it might be a model error, so we can retry.
+        console.log(`AI returned empty result, retrying... (${i + 1}/${maxRetries})`);
       } catch (error: any) {
         // Check if the error is a 503 Service Unavailable and if we have retries left
         if (error.message.includes('503') && i < maxRetries - 1) {
@@ -100,7 +114,7 @@ const suggestRechargePlansFlow = ai.defineFlow(
         }
       }
     }
-    // This part should not be reachable, but is here for type safety.
-    throw new Error('Failed to get a response from the AI model after multiple retries.');
+    // If after all retries we still have no plans, return an empty object to avoid crashes.
+    return { suggestedPlans: [], valueForMoneyPlans: [] };
   }
 );
