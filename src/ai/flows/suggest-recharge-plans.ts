@@ -14,78 +14,73 @@ import {
   SuggestRechargePlansInputSchema,
   SuggestRechargePlansOutput,
   SuggestRechargePlansOutputSchema,
-  PlanSchema
+  PlanSchema,
+  Plan,
 } from '@/ai/schemas';
 import {getLiveRechargePlans} from '@/services/telecom-service';
-import { z } from 'zod';
+import {z} from 'zod';
 
-// Define the schema for the tool's output, which is just an array of all available plans
-const AllPlansSchema = z.object({
-  plans: z.array(PlanSchema),
+// Define the schema for the AI's analysis. It receives the user's preferences
+// and the full list of available plans.
+const ValueAnalysisInputSchema = SuggestRechargePlansInputSchema.extend({
+  allPlans: z.array(PlanSchema),
 });
 
-// Define the tool for fetching live recharge plans
-const getLiveRechargePlansTool = ai.defineTool(
-  {
-    name: 'getLiveRechargePlans',
-    description: 'Get a list of currently available recharge plans from telecom providers based on user preferences.',
-    inputSchema: SuggestRechargePlansInputSchema,
-    outputSchema: AllPlansSchema,
-  },
-  async (input) => {
-    // This calls our service to get scored and sorted plans.
-    const plans = await getLiveRechargePlans(input);
-    return { plans };
-  }
-);
+// The AI's output is now ONLY the value-for-money plans.
+const ValueAnalysisOutputSchema = z.object({
+  valueForMoneyPlans: z.array(
+    PlanSchema.extend({
+      reasoning: z
+        .string()
+        .describe(
+          'A brief explanation of why this plan offers better long-term value, including the potential savings compared to recharging a shorter-term plan over the same period.'
+        ),
+    })
+  ),
+});
 
-
-// Define the main function that will be called
-export async function suggestRechargePlans(input: SuggestRechargePlansInput): Promise<SuggestRechargePlansOutput> {
+// The main function that the UI calls. It now orchestrates the process.
+export async function suggestRechargePlans(
+  input: SuggestRechargePlansInput
+): Promise<SuggestRechargePlansOutput> {
   return suggestRechargePlansFlow(input);
 }
 
-// Define the prompt
-const prompt = ai.definePrompt({
-  name: 'suggestRechargePlansPrompt',
-  input: {schema: SuggestRechargePlansInputSchema},
-  output: {schema: SuggestRechargePlansOutputSchema},
-  tools: [getLiveRechargePlansTool],
-  prompt: `You are a recharge plan recommendation expert. Your goal is to help users find the best mobile recharge plan and uncover significant long-term savings.
+// Define the prompt for the AI's value analysis task.
+// Its only job is to find long-term deals.
+const valueAnalysisPrompt = ai.definePrompt({
+  name: 'valueAnalysisPrompt',
+  input: {schema: ValueAnalysisInputSchema},
+  output: {schema: ValueAnalysisOutputSchema},
+  prompt: `You are a recharge plan recommendation expert. Your ONLY goal is to find "hidden gems" in a list of plans that offer better long-term value.
 
   User Preferences:
   - Daily Data Usage: {{dailyDataUsageGB}} GB/day
   - Validity: {{validityDays}} days
   - Telecom Provider: {{telecomProvider}}
-  {{#if location}}
-  - Location: {{location}}
-  {{/if}}
+
+  Full list of available plans:
+  {{#each allPlans}}
+  - {{this.planName}}: ₹{{this.price}} for {{this.validity}} days with {{this.dailyData}} GB/day.
+  {{/each}}
 
   Follow these steps carefully:
 
-  Step 1: Fetch Available Plans
-  You MUST use the 'getLiveRechargePlans' tool to fetch a list of relevant plans based on the user's preferences. The tool will return a list of all available plans that are sorted by relevance.
-
-  Step 2: Identify Direct Matches from Tool Output
-  From the tool's output, select up to 3 plans that are the closest direct match to the user's request for data and validity. Populate the 'suggestedPlans' list with these. These should be the top results from the tool's response.
-
-  Step 3: Perform Value-for-Money Analysis (AI INTELLIGENCE)
-  This is the most important step. Analyze ALL plans returned by the tool to find "hidden gems" that offer better long-term value.
+  Step 1: Perform Value-for-Money Analysis
+  This is your only task. Analyze ALL plans in the provided list to find plans that offer better long-term value.
   - Look for annual (365 days) or other long-validity plans.
-  - Take a direct match plan (e.g., a 28-day plan) and calculate its total cost over a year. For example, if a 28-day plan costs ₹299, the annual cost would be approximately (365 / 28) * 299.
-  - Compare this calculated annual cost to the price of an actual annual plan from the tool output.
-  - If the annual plan is cheaper AND offers similar or better benefits (like more daily data), it is a superior value-for-money option.
+  - Compare their cost-effectiveness against shorter-term plans. For example, calculate the annual cost of a 28-day plan and see if an actual annual plan is cheaper.
+  - If an annual plan is cheaper AND offers similar or better benefits (like more daily data), it is a superior value-for-money option.
 
-  Step 4: Populate Value-for-Money Suggestions
+  Step 2: Populate Value-for-Money Suggestions
   - If you find one or two plans that offer significant long-term savings, add them to the 'valueForMoneyPlans' list.
   - For each plan in this list, you MUST write a clear 'reasoning' statement. Explain the long-term benefit and the potential savings. For example: "This annual plan costs ₹3599, saving you over ₹280 compared to recharging the ₹299 monthly plan for a year, and you get more data!".
   - Do NOT add plans to this list unless they offer a clear, financial advantage over time.
-
-  You must populate the final output based on your analysis of the data provided by the 'getLiveRechargePlans' tool.
+  - If no plans offer significant long-term value, return an empty list.
   `,
 });
 
-// Define the flow
+// Define the main flow.
 const suggestRechargePlansFlow = ai.defineFlow(
   {
     name: 'suggestRechargePlansFlow',
@@ -93,28 +88,34 @@ const suggestRechargePlansFlow = ai.defineFlow(
     outputSchema: SuggestRechargePlansOutputSchema,
   },
   async (input) => {
-    const maxRetries = 3;
-    for (let i = 0; i < maxRetries; i++) {
-      try {
-        const {output} = await prompt(input);
-        if (output && (output.suggestedPlans.length > 0 || output.valueForMoneyPlans.length > 0)) {
-          return output;
-        }
-        // If the output is empty, it might be a model error, so we can retry.
-        console.log(`AI returned empty result, retrying... (${i + 1}/${maxRetries})`);
-      } catch (error: any) {
-        // Check if the error is a 503 Service Unavailable and if we have retries left
-        if (error.message.includes('503') && i < maxRetries - 1) {
-          console.log(`Service unavailable, retrying... (${i + 1}/${maxRetries})`);
-          // Wait for a second before retrying
-          await new Promise(resolve => setTimeout(resolve, 1000));
-        } else {
-          // If it's not a 503 or we've run out of retries, throw the error
-          throw error;
-        }
+    // Step 1: Get all relevant plans using our reliable TypeScript function.
+    // This gives us a sorted list of the best direct matches.
+    const allSortedPlans = await getLiveRechargePlans(input);
+
+    // Step 2: Take the top 3 plans as the direct suggestions.
+    // This is now done in code, not by the AI, so it's guaranteed to work.
+    const suggestedPlans: Plan[] = allSortedPlans.slice(0, 3);
+
+    // Step 3: Ask the AI to perform only the value analysis.
+    // We pass the user's input and the full list of plans to the AI.
+    let valueForMoneyPlans: SuggestRechargePlansOutput['valueForMoneyPlans'] = [];
+    try {
+      const {output} = await valueAnalysisPrompt({
+        ...input,
+        allPlans: allSortedPlans,
+      });
+      if (output) {
+        valueForMoneyPlans = output.valueForMoneyPlans;
       }
+    } catch (error) {
+      console.error('AI value analysis failed, returning direct matches only.', error);
+      // If the AI fails, we can still return the direct matches.
     }
-    // If after all retries we still have no plans, return an empty object to avoid crashes.
-    return { suggestedPlans: [], valueForMoneyPlans: [] };
+    
+    // Step 4: Combine the results and return.
+    return {
+      suggestedPlans,
+      valueForMoneyPlans,
+    };
   }
 );
