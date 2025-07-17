@@ -15,12 +15,22 @@ const MOCK_PLANS: (SuggestRechargePlansOutput['suggestedPlans'][0] & { provider:
   { provider: 'Jio', planName: 'Annual Saver', price: 2879, validity: 365, dailyData: 2, totalData: 730, otherBenefits: 'Unlimited Calls, 100 SMS/day, JioTV, JioCinema', rechargeLink: '#' },
   { provider: 'Jio', planName: 'Annual Data Pro', price: 3119, validity: 365, dailyData: 2.5, totalData: 912.5, otherBenefits: 'Unlimited Calls, 100 SMS/day, Disney+ Hotstar Mobile for 1 year', rechargeLink: '#' },
 
-  // Airtel Plans
-  { provider: 'Airtel', planName: 'Airtel Truly Unlimited 28', price: 265, validity: 28, dailyData: 1, totalData: 28, otherBenefits: 'Unlimited Calls, 100 SMS/day, Wynk Music', rechargeLink: '#' },
-  { provider: 'Airtel', planName: 'Airtel Data Pack 28', price: 359, validity: 28, dailyData: 2, totalData: 56, otherBenefits: 'Unlimited Calls, 100 SMS/day, Xstream App, Wynk Music', rechargeLink: '#' },
-  { provider: 'Airtel', planName: 'Airtel Binge 56', price: 549, validity: 56, dailyData: 2, totalData: 112, otherBenefits: 'Unlimited Calls, 100 SMS/day, Xstream App, Wynk Music', rechargeLink: '#' },
-  { provider: 'Airtel', planName: 'Airtel Mega Saver 84', price: 839, validity: 84, dailyData: 2, totalData: 168, otherBenefits: 'Unlimited Calls, 100 SMS/day, Disney+ Hotstar Mobile for 3 months, Xstream App', rechargeLink: '#' },
-  { provider: 'Airtel', planName: 'Airtel Annual Pack', price: 2999, validity: 365, dailyData: 2, totalData: 730, otherBenefits: 'Unlimited Calls, 100 SMS/day, Apollo 24|7, Wynk Music', rechargeLink: '#' },
+  // Real Airtel Plans from spreadsheet
+  { provider: 'Airtel', planName: 'Airtel Annual Unlimited', price: 1799, validity: 365, dailyData: 0.06, totalData: 24, otherBenefits: 'Unlimited Calls, 3600 SMS, Apollo 24|7 Circle, Wynk Music', rechargeLink: '#' },
+  { provider: 'Airtel', planName: 'Airtel 84 Day Unlimited', price: 999, validity: 84, dailyData: 2.5, totalData: 210, otherBenefits: 'Unlimited 5G Data, Airtel Xstream Play, Apollo 24|7 Circle', rechargeLink: '#' },
+  { provider: 'Airtel', planName: 'Airtel 84 Day Hotstar', price: 839, validity: 84, dailyData: 2, totalData: 168, otherBenefits: 'Unlimited 5G Data, Disney+ Hotstar Mobile for 3 Months, Airtel Xstream Play', rechargeLink: '#' },
+  { provider: 'Airtel', planName: 'Airtel 84 Day Value', price: 719, validity: 84, dailyData: 1.5, totalData: 126, otherBenefits: 'Unlimited 5G Data, Airtel Xstream Play, RewardsMini Subscription', rechargeLink: '#' },
+  { provider: 'Airtel', planName: 'Airtel 56 Day Prime', price: 699, validity: 56, dailyData: 3, totalData: 168, otherBenefits: 'Unlimited 5G Data, Amazon Prime Membership, Airtel Xstream Play', rechargeLink: '#' },
+  { provider: 'Airtel', planName: 'Airtel 77 Day Unlimited', price: 666, validity: 77, dailyData: 1.5, totalData: 115.5, otherBenefits: 'Unlimited 5G Data, Apollo 24|7 Circle, Wynk Music', rechargeLink: '#' },
+  { provider: 'Airtel', planName: 'Airtel 56 Day Hotstar', price: 599, validity: 56, dailyData: 3, totalData: 168, otherBenefits: 'Unlimited 5G Data, Disney+ Hotstar Mobile, Airtel Xstream Play', rechargeLink: '#' },
+  { provider: 'Airtel', planName: 'Airtel 56 Day Unlimited', price: 549, validity: 56, dailyData: 2, totalData: 112, otherBenefits: 'Unlimited 5G Data, Airtel Xstream Play, Apollo 24|7 Circle', rechargeLink: '#' },
+  { provider: 'Airtel', planName: 'Airtel 28 Day Unlimited', price: 499, validity: 28, dailyData: 3, totalData: 84, otherBenefits: 'Unlimited 5G Data, Disney+ Hotstar Mobile for 3 Months, Airtel Xstream Play', rechargeLink: '#' },
+  { provider: 'Airtel', planName: 'Airtel 28 Day Data', price: 359, validity: 28, dailyData: 2.5, totalData: 70, otherBenefits: 'Unlimited 5G Data, Airtel Xstream Play for 28 days', rechargeLink: '#' },
+  { provider: 'Airtel', planName: 'Airtel 28 Day Value', price: 299, validity: 28, dailyData: 1.5, totalData: 42, otherBenefits: 'Unlimited 5G Data, Apollo 24|7 Circle, Wynk Music', rechargeLink: '#' },
+  { provider: 'Airtel', planName: 'Airtel 28 Day Basic', price: 265, validity: 28, dailyData: 1, totalData: 28, otherBenefits: 'Unlimited 5G Data, Wynk Music Free', rechargeLink: '#' },
+  { provider: 'Airtel', planName: 'Airtel 28 Day Starter', price: 239, validity: 28, dailyData: 1, totalData: 28, otherBenefits: 'Unlimited Calls, 100 SMS/Day, Wynk Music', rechargeLink: '#' },
+  { provider: 'Airtel', planName: 'Airtel 24 Day Starter', price: 209, validity: 24, dailyData: 1, totalData: 24, otherBenefits: 'Unlimited Calls, 100 SMS/Day, Wynk Music', rechargeLink: '#' },
+  { provider: 'Airtel', planName: 'Airtel 28 Day Base', price: 179, validity: 28, dailyData: 0.07, totalData: 2, otherBenefits: 'Unlimited Calls, 300 SMS, Wynk Music', rechargeLink: '#' }
 ];
 
 
@@ -55,8 +65,15 @@ export async function getLiveRechargePlans(
   // Replace this with your own logic that processes the scraped data.
   const filteredPlans = MOCK_PLANS.filter(plan => {
     const providerMatch = plan.provider.toLowerCase() === telecomProvider.toLowerCase();
-    const validityMatch = plan.validity === validityDays;
-    const dataMatch = plan.dailyData >= dailyDataUsageGB;
+    
+    // Find a validity that's close to the user's preference
+    const validityMatch = plan.validity >= validityDays && plan.validity < validityDays + 10;
+    
+    // For daily plans, check against daily data. For total data plans, do a rough equivalent check.
+    const dataMatch = plan.dailyData > 0 
+      ? plan.dailyData >= dailyDataUsageGB
+      : (plan.totalData / plan.validity) >= dailyDataUsageGB;
+
     return providerMatch && validityMatch && dataMatch;
   });
 
