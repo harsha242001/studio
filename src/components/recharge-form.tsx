@@ -25,7 +25,7 @@ interface RechargeFormProps {
   isLoading: boolean;
 }
 
-const dataOptions = ['1', '1.5', '2', '3'];
+const dataOptions = ['1', '1.5', '2', '2.5', '3'];
 const validityOptions = ['28', '56', '84', '365'];
 const providerOptions = ['Airtel', 'Jio'];
 
