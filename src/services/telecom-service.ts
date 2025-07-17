@@ -67,20 +67,26 @@ export async function getLiveRechargePlans(
   }
   
   const scoredPlans = filteredByProvider.map(plan => {
-    // Calculate the "distance" from the user's preferences. Lower is better.
-    // We penalize plans that are "less than" what the user asked for more heavily.
-    const validityDiff = plan.validity >= validityDays ? (plan.validity - validityDays) * 0.5 : (validityDays - plan.validity) * 2;
-    const dataDiff = plan.dailyData >= dailyDataUsageGB ? (plan.dailyData - dailyDataUsageGB) : (dailyDataUsageGB - plan.dailyData) * 2;
+    // Score for validity: Lower is better.
+    // We heavily penalize plans with less validity than requested.
+    // A small penalty is applied for more validity, as it might be more expensive.
+    const validityDiff = plan.validity - validityDays;
+    const validityScore = validityDiff >= 0 ? validityDiff * 0.1 : Math.abs(validityDiff) * 2;
+    
+    // Score for data: Lower is better.
+    // Similar to validity, we heavily penalize plans with less data.
+    const dataDiff = plan.dailyData - dailyDataUsageGB;
+    const dataScore = dataDiff >= 0 ? dataDiff * 0.5 : Math.abs(dataDiff) * 3;
 
-    // We give slightly more weight to matching the data preference.
-    const score = validityDiff * 0.4 + dataDiff * 0.6;
+    // Total score is a weighted average. Data is more important.
+    const score = (validityScore * 0.4) + (dataScore * 0.6);
 
     return { ...plan, score };
   });
 
   const sortedPlans = scoredPlans.sort((a, b) => a.score - b.score);
 
-  console.log(`Found ${sortedPlans.length} matching plans for ${telecomProvider}.`);
+  console.log(`Found ${sortedPlans.length} matching plans for ${telecomProvider}. Top plan:`, sortedPlans[0]);
 
-  return { suggestedPlans: sortedPlans.slice(0, 3) };
+  return { suggestedPlans: sortedPlans.slice(0, 4) };
 }
