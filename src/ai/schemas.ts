@@ -17,7 +17,7 @@ export const PlanSchema = z.object({
   dailyData: z.number().describe('The daily data limit, in GB.'),
   totalData: z.number().describe('The total data offered by the plan, in GB.'),
   otherBenefits: z.string().optional().describe('Other benefits offered by the plan.'),
-  rechargeLink: z.string().optional().describe('The link to recharge the plan.'),
+  rechargeLink: z.string().nullable().optional().describe('The link to recharge the plan.'),
 });
 export type Plan = z.infer<typeof PlanSchema>;
 
