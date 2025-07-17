@@ -67,7 +67,7 @@ export async function getLiveRechargePlans(
     const providerMatch = plan.provider.toLowerCase() === telecomProvider.toLowerCase();
     
     // Find a validity that's close to the user's preference
-    const validityMatch = plan.validity >= validityDays && plan.validity < validityDays + 10;
+    const validityMatch = plan.validity >= validityDays && plan.validity < validityDays + 15;
     
     // For daily plans, check against daily data. For total data plans, do a rough equivalent check.
     const dataMatch = plan.dailyData > 0 
