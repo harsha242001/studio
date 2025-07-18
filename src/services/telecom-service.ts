@@ -40,25 +40,16 @@ export async function getLiveRechargePlans(
   const { dailyDataUsageGB, validityDays, telecomProvider } = input;
 
   const scoredPlans = MOCK_PLANS
-    // First, filter by the selected provider
-    .filter(plan => plan.provider.toLowerCase() === telecomProvider.toLowerCase())
-    // Then, calculate a score for each plan
+    // First, filter by the selected provider and exact daily data
+    .filter(plan => 
+        plan.provider.toLowerCase() === telecomProvider.toLowerCase() && 
+        plan.dailyData === dailyDataUsageGB
+    )
+    // Then, calculate a score for each plan based on validity
     .map(plan => {
-      // Lower score is better. 0 is a perfect match.
-
-      // Calculate score for data. We want an EXACT match for suggested plans.
-      // Plans with a different data amount are heavily penalized.
-      const dataDiff = plan.dailyData - dailyDataUsageGB;
-      const dataScore = dataDiff === 0 ? 0 : 1000; // Exact match is 0, anything else is a big penalty
-
-      // Calculate score for validity. We want the closest match.
-      // The score is the absolute difference in days.
+      // Lower score is better. We want the closest validity.
       const validityScore = Math.abs(plan.validity - validityDays);
-      
-      // Total score is a combination of both. Data match is primary.
-      const score = dataScore + validityScore;
-
-      return { ...plan, score };
+      return { ...plan, score: validityScore };
     });
 
   // Sort by score in ascending order (lowest score is best)
