@@ -45,22 +45,18 @@ export async function getLiveRechargePlans(
     // Then, calculate a score for each plan
     .map(plan => {
       // Lower score is better. 0 is a perfect match.
-      
-      // Calculate difference for validity. We prefer plans with >= validity.
-      // Plans with much higher validity are penalized slightly to prefer closer matches.
-      const validityDiff = plan.validity - validityDays;
-      const validityScore = validityDiff >= 0 
-        ? validityDiff * 0.1 // Small penalty for more validity
-        : Math.abs(validityDiff) * 10; // Big penalty for less validity
 
-      // Calculate difference for data. We want an EXACT match for suggested plans.
+      // Calculate score for data. We want an EXACT match for suggested plans.
+      // Plans with a different data amount are heavily penalized.
       const dataDiff = plan.dailyData - dailyDataUsageGB;
-      const dataScore = dataDiff === 0
-        ? 0 // Perfect match
-        : Math.abs(dataDiff) * 50; // Heavy penalty for any data difference
+      const dataScore = dataDiff === 0 ? 0 : 1000; // Exact match is 0, anything else is a big penalty
+
+      // Calculate score for validity. We want the closest match.
+      // The score is the absolute difference in days.
+      const validityScore = Math.abs(plan.validity - validityDays);
       
-      // Total score.
-      const score = validityScore + dataScore;
+      // Total score is a combination of both. Data match is primary.
+      const score = dataScore + validityScore;
 
       return { ...plan, score };
     });
