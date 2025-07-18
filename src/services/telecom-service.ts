@@ -53,11 +53,11 @@ export async function getLiveRechargePlans(
         ? validityDiff * 0.1 // Small penalty for more validity
         : Math.abs(validityDiff) * 10; // Big penalty for less validity
 
-      // Calculate difference for data. We prefer plans with >= data.
+      // Calculate difference for data. We want an EXACT match for suggested plans.
       const dataDiff = plan.dailyData - dailyDataUsageGB;
-      const dataScore = dataDiff >= 0 
-        ? dataDiff * 1 // Prefer more data, but not excessively
-        : Math.abs(dataDiff) * 20; // Big penalty for less data
+      const dataScore = dataDiff === 0
+        ? 0 // Perfect match
+        : Math.abs(dataDiff) * 50; // Heavy penalty for any data difference
       
       // Total score.
       const score = validityScore + dataScore;
