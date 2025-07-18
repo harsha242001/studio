@@ -24,7 +24,8 @@ export type Plan = z.infer<typeof PlanSchema>;
 
 // Define the output schema for the flow
 export const SuggestRechargePlansOutputSchema = z.object({
-  suggestedPlans: z.array(PlanSchema).describe('A list of up to 3 recharge plans that are a direct match for the user’s preferences.'),
+  exactMatchPlans: z.array(PlanSchema).describe("A list of recharge plans that are an exact match for the user’s preferences."),
+  similarPlans: z.array(PlanSchema).describe("A list of recharge plans that are a close match to the user's preferences."),
   valueForMoneyPlans: z.array(
     PlanSchema.extend({
       reasoning: z.string().describe("A brief explanation of why this plan offers better long-term value, including the potential savings compared to recharging a shorter-term plan over the same period."),

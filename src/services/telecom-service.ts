@@ -34,29 +34,33 @@ const MOCK_PLANS: Plan[] = [
 
 export async function getLiveRechargePlans(
   input: SuggestRechargePlansInput
-): Promise<Plan[]> {
+): Promise<{ exactMatchPlans: Plan[]; similarPlans: Plan[] }> {
   console.log('Filtering plans based on input:', input);
 
   const { dailyDataUsageGB, validityDays, telecomProvider } = input;
 
-  const scoredPlans = MOCK_PLANS
-    // First, filter by the selected provider and exact daily data
-    .filter(plan => 
-        plan.provider.toLowerCase() === telecomProvider.toLowerCase() && 
-        plan.dailyData === dailyDataUsageGB
+  const providerPlans = MOCK_PLANS.filter(
+    (plan) => plan.provider.toLowerCase() === telecomProvider.toLowerCase()
+  );
+
+  const exactMatchPlans = providerPlans.filter(
+    (plan) =>
+      plan.dailyData === dailyDataUsageGB && plan.validity === validityDays
+  );
+
+  const similarPlans = providerPlans
+    .filter(
+      (plan) =>
+        plan.dailyData === dailyDataUsageGB && plan.validity !== validityDays
     )
-    // Then, calculate a score for each plan based on validity
-    .map(plan => {
-      // Lower score is better. We want the closest validity.
-      const validityScore = Math.abs(plan.validity - validityDays);
-      return { ...plan, score: validityScore };
-    });
+    .map((plan) => ({
+      ...plan,
+      // Score based on how close the validity is
+      score: Math.abs(plan.validity - validityDays),
+    }))
+    .sort((a, b) => a.score - b.score);
 
-  // Sort by score in ascending order (lowest score is best)
-  const sortedPlans = scoredPlans.sort((a, b) => a.score - b.score);
+  console.log(`Found ${exactMatchPlans.length} exact matches and ${similarPlans.length} similar matches.`);
 
-  console.log(`Found ${sortedPlans.length} matching plans for ${telecomProvider}. Top plan:`, sortedPlans[0]);
-
-  // Return all sorted plans for the AI to analyze
-  return sortedPlans;
+  return { exactMatchPlans, similarPlans };
 }

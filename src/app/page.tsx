@@ -12,7 +12,8 @@ import { PlanSkeleton } from '@/components/plan-skeleton';
 import { WifiOff, BrainCircuit } from 'lucide-react';
 
 export default function Home() {
-  const [suggestedPlans, setSuggestedPlans] = useState<SuggestRechargePlansOutput['suggestedPlans'] | null>(null);
+  const [exactMatchPlans, setExactMatchPlans] = useState<SuggestRechargePlansOutput['exactMatchPlans'] | null>(null);
+  const [similarPlans, setSimilarPlans] = useState<SuggestRechargePlansOutput['similarPlans'] | null>(null);
   const [valueForMoneyPlans, setValueForMoneyPlans] = useState<SuggestRechargePlansOutput['valueForMoneyPlans'] | null>(null);
   const [rawOutput, setRawOutput] = useState<SuggestRechargePlansOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -20,21 +21,21 @@ export default function Home() {
 
   const handleFormSubmit = async (data: SuggestRechargePlansInput) => {
     setIsLoading(true);
-    setSuggestedPlans(null);
+    setExactMatchPlans(null);
+    setSimilarPlans(null);
     setValueForMoneyPlans(null);
     setRawOutput(null);
     try {
       const result = await suggestRechargePlans(data);
       setRawOutput(result); // Store raw output for debugging
-      if (result.suggestedPlans && result.suggestedPlans.length > 0) {
-        setSuggestedPlans(result.suggestedPlans);
-      } else {
-        setSuggestedPlans([]);
+      if (result.exactMatchPlans) {
+        setExactMatchPlans(result.exactMatchPlans);
       }
-      if (result.valueForMoneyPlans && result.valueForMoneyPlans.length > 0) {
+      if (result.similarPlans) {
+        setSimilarPlans(result.similarPlans);
+      }
+      if (result.valueForMoneyPlans) {
         setValueForMoneyPlans(result.valueForMoneyPlans);
-      } else {
-        setValueForMoneyPlans([]);
       }
 
     } catch (error) {
@@ -48,6 +49,12 @@ export default function Home() {
       setIsLoading(false);
     }
   };
+
+  const hasNoResults = !isLoading &&
+    (!exactMatchPlans || exactMatchPlans.length === 0) &&
+    (!similarPlans || similarPlans.length === 0) &&
+    (!valueForMoneyPlans || valueForMoneyPlans.length === 0);
+
 
   return (
     <div className="min-h-screen w-full">
@@ -78,7 +85,7 @@ export default function Home() {
               </div>
             )}
 
-            {!isLoading && valueForMoneyPlans && valueForMoneyPlans.length > 0 && (
+            {valueForMoneyPlans && valueForMoneyPlans.length > 0 && (
               <div className="mb-12">
                 <div className="text-center mb-6">
                   <h2 className="text-2xl font-bold inline-flex items-center gap-2">
@@ -89,24 +96,35 @@ export default function Home() {
                 </div>
                 <div className="grid gap-6 md:grid-cols-2">
                   {valueForMoneyPlans.map((plan, index) => (
-                    <PlanCard key={index} plan={plan} isFeatured={true} />
+                    <PlanCard key={`value-${index}`} plan={plan} isFeatured={true} />
                   ))}
                 </div>
               </div>
             )}
 
-            {!isLoading && suggestedPlans && suggestedPlans.length > 0 && (
-              <>
-                <h2 className="text-2xl font-bold text-center mb-6">Here are your suggested plans:</h2>
+            {exactMatchPlans && exactMatchPlans.length > 0 && (
+              <div className="mb-12">
+                <h2 className="text-2xl font-bold text-center mb-6">Your Exact Match</h2>
                 <div className="grid gap-6 md:grid-cols-2">
-                  {suggestedPlans.map((plan, index) => (
-                    <PlanCard key={index} plan={plan} />
+                  {exactMatchPlans.map((plan, index) => (
+                    <PlanCard key={`exact-${index}`} plan={plan} />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {similarPlans && similarPlans.length > 0 && (
+              <>
+                <h2 className="text-2xl font-bold text-center mb-6">Similar Plans You Might Like</h2>
+                <div className="grid gap-6 md:grid-cols-2">
+                  {similarPlans.map((plan, index) => (
+                    <PlanCard key={`similar-${index}`} plan={plan} />
                   ))}
                 </div>
               </>
             )}
             
-            {!isLoading && suggestedPlans?.length === 0 && valueForMoneyPlans?.length === 0 && (
+            {hasNoResults && (
                 <div className="text-center py-12">
                     <div className="inline-flex items-center justify-center bg-secondary text-secondary-foreground rounded-full p-4 mb-4">
                         <WifiOff className="h-10 w-10"/>

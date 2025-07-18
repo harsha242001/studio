@@ -89,8 +89,8 @@ const suggestRechargePlansFlow = ai.defineFlow(
   },
   async (input) => {
     // Step 1: Get all relevant plans using our reliable TypeScript function.
-    // This gives us a sorted list of the best direct matches.
-    const suggestedPlans = await getLiveRechargePlans(input);
+    // This gives us categorized lists of exact and similar matches.
+    const { exactMatchPlans, similarPlans } = await getLiveRechargePlans(input);
 
     // Step 2: Ask the AI to perform only the value analysis.
     // We pass the user's input and the full list of plans to the AI.
@@ -113,7 +113,8 @@ const suggestRechargePlansFlow = ai.defineFlow(
     
     // Step 3: Combine the results and return.
     return {
-      suggestedPlans,
+      exactMatchPlans,
+      similarPlans,
       valueForMoneyPlans,
     };
   }
