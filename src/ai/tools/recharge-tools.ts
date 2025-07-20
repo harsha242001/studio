@@ -87,7 +87,11 @@ export const findValueForMoneyPlansTool = ai.defineTool(
         const yearlySavings = savingsPerDay * 365;
         return {
           ...p,
-          reasoning: `This plan is cheaper per day. By choosing this plan, you could save approximately ₹${yearlySavings.toFixed(
+          reasoning: `This plan is cheaper per day (₹${costPerDay.toFixed(
+            2
+          )} vs ₹${baselineCostPerDay.toFixed(
+            2
+          )}). You could save approximately ₹${yearlySavings.toFixed(
             0
           )} over a year.`,
         };
