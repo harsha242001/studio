@@ -1,8 +1,6 @@
-'use server';
-
 import type { SuggestRechargePlansInput, Plan } from '@/ai/schemas';
 
-const MOCK_PLANS: Plan[] = [
+export const MOCK_PLANS: Plan[] = [
   // Jio Plans
   { provider: 'Jio', planName: 'Netflix Premium', price: 1798, validity: 84, dailyData: 3, totalData: 252, otherBenefits: 'Netflix Basic, Unlimited 5G Data', rechargeLink: 'https://www.jio.com/selfcare/plans/mobility/prepaid-plans-details/?planId=1798' },
   { provider: 'Jio', planName: 'Hotstar Super', price: 1729, validity: 84, dailyData: 2, totalData: 168, otherBenefits: 'Netflix Basic, JioHotstar Super', rechargeLink: 'https://www.jio.com/selfcare/plans/mobility/prepaid-plans-details/?planId=1729' },
