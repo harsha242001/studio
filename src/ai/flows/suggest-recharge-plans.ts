@@ -20,6 +20,7 @@ import {
 } from '@/ai/schemas';
 import {
   findExactMatchPlanTool,
+  findSimilarPlansTool,
   findValueForMoneyPlansTool,
 } from '@/ai/tools/recharge-tools';
 
@@ -48,9 +49,12 @@ const suggestRechargePlansFlow = ai.defineFlow(
     const exactMatchResult = await findExactMatchPlanTool(numericInput);
     const exactMatchPlan = exactMatchResult.exactMatchPlan;
 
+    // Step 2: Find similar plans.
+    const similarPlansResult = await findSimilarPlansTool(numericInput);
+
     let valueForMoneyPlans: (Plan & { reasoning: string })[] = [];
 
-    // Step 2: If an exact match is found, find value-for-money plans.
+    // Step 3: If an exact match is found, find value-for-money plans.
     if (exactMatchPlan) {
       const valueAnalysisResult = await findValueForMoneyPlansTool({
         ...numericInput,
@@ -59,11 +63,11 @@ const suggestRechargePlansFlow = ai.defineFlow(
       valueForMoneyPlans = valueAnalysisResult.valueForMoneyPlans;
     }
 
-    // Step 3: Construct the final output.
+    // Step 4: Construct the final output.
     const output: SuggestRechargePlansOutput = {
       exactMatchPlans: exactMatchPlan ? [exactMatchPlan] : [],
       valueForMoneyPlans: valueForMoneyPlans,
-      similarPlans: [], // This field is not being populated by the tools anymore.
+      similarPlans: similarPlansResult.similarPlans,
     };
 
     return output;

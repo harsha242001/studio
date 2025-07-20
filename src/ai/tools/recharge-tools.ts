@@ -4,6 +4,7 @@
  * @fileoverview Defines tools for finding and analyzing mobile recharge plans.
  * - findExactMatchPlanTool: Finds plans that perfectly match user criteria.
  * - findValueForMoneyPlansTool: Finds plans that offer better long-term value.
+ * - findSimilarPlansTool: Finds plans with similar data but different validity.
  */
 
 import {ai} from '@/ai/genkit';
@@ -98,3 +99,38 @@ export const findValueForMoneyPlansTool = ai.defineTool(
     };
   }
 );
+
+export const findSimilarPlansTool = ai.defineTool(
+  {
+    name: 'findSimilarPlansTool',
+    description:
+      "Finds recharge plans that have the same daily data but different validity periods, sorted by the closest validity.",
+    inputSchema: SuggestRechargePlansInputSchema,
+    outputSchema: z.object({
+      similarPlans: z.array(PlanSchema),
+    }),
+  },
+  async (input) => {
+    console.log('Finding similar plans for:', input);
+    const {dailyDataUsageGB, validityDays, telecomProvider} = input;
+
+    const providerPlans = MOCK_PLANS.filter(
+      (p) => p.provider.toLowerCase() === telecomProvider.toLowerCase()
+    );
+
+    const similarPlans = providerPlans
+      .filter(
+        (plan) =>
+          plan.dailyData === dailyDataUsageGB && plan.validity !== validityDays
+      )
+      .map((plan) => ({
+        ...plan,
+        score: Math.abs(plan.validity - validityDays),
+      }))
+      .sort((a, b) => a.score - b.score)
+      .slice(0, 5); // Return top 5 similar plans
+
+    return {similarPlans};
+  }
+);
+
