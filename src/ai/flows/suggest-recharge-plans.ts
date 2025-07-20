@@ -165,3 +165,5 @@ const MOCK_PLANS: Plan[] = [
   { provider: 'Airtel', planName: 'HelloTunes 28D 1GB', price: 299, validity: 28, dailyData: 1, totalData: 28, otherBenefits: 'Free hellotunes for you', rechargeLink: 'https://www.airtel.in/recharge/prepaid' },
   { provider: 'Airtel', planName: 'Basic 24D', price: 249, validity: 24, dailyData: 1, totalData: 24, otherBenefits: 'Watch free TV shows, Movies, Live channels and much more', rechargeLink: 'https://www.airtel.in/recharge/prepaid' },
 ];
+
+    
