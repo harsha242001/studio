@@ -13,8 +13,8 @@ import { SuggestRechargePlansInputSchema } from '@/ai/schemas';
 import type { SuggestRechargePlansInput } from '@/ai/schemas';
 
 export const rechargeFormSchema = SuggestRechargePlansInputSchema.extend({
-  dailyDataUsageGB: z.coerce.number().min(0.1, { message: 'Please select a data amount.' }),
-  validityDays: z.coerce.number().min(1, { message: 'Please select a validity period.' }),
+  dailyDataUsageGB: z.string().min(1, { message: 'Please select a data amount.' }),
+  validityDays: z.string().min(1, { message: 'Please select a validity period.' }),
   telecomProvider: z.string().min(1, { message: 'Please select a provider.' }),
 });
 
@@ -35,14 +35,22 @@ export function RechargeForm({ onSubmit, isLoading }: RechargeFormProps) {
     defaultValues: {
       telecomProvider: '',
       location: '',
-      dailyDataUsageGB: 0,
-      validityDays: 0,
+      dailyDataUsageGB: '0',
+      validityDays: '0',
     },
   });
 
+  const handleFormSubmit = (values: RechargeFormValues) => {
+    onSubmit({
+      ...values,
+      dailyDataUsageGB: parseFloat(values.dailyDataUsageGB),
+      validityDays: parseInt(values.validityDays, 10),
+    });
+  };
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+      <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-8">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <FormField
             control={form.control}
@@ -78,7 +86,7 @@ export function RechargeForm({ onSubmit, isLoading }: RechargeFormProps) {
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Select validity period" />
-                    </SelectTrigger>
+                    </Trigger>
                   </FormControl>
                   <SelectContent>
                     {validityOptions.map((option) => (
