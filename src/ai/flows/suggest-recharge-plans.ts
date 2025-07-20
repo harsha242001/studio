@@ -110,8 +110,14 @@ const suggestRechargePlansFlow = ai.defineFlow(
     let valueForMoneyPlans: SuggestRechargePlansOutput['valueForMoneyPlans'] = [];
     try {
       // For value analysis, we need ALL plans for the provider.
-      const allProviderPlans = MOCK_PLANS.filter(p => p.provider.toLowerCase() === input.telecomProvider.toLowerCase());
+      let allProviderPlans = MOCK_PLANS.filter(p => p.provider.toLowerCase() === input.telecomProvider.toLowerCase());
       
+      // IMPORTANT FIX: Pre-filter the baseline plan from the list sent to the AI.
+      // This simplifies the AI's task and prevents confusion.
+      if (baselinePlan) {
+        allProviderPlans = allProviderPlans.filter(p => p.planName !== baselinePlan.planName);
+      }
+
       const {output} = await valueAnalysisPrompt({
         ...input,
         allPlans: allProviderPlans,
@@ -119,8 +125,7 @@ const suggestRechargePlansFlow = ai.defineFlow(
       });
 
       if (output) {
-        // Filter out the baseline plan from the AI's suggestions if it happens to be there.
-        valueForMoneyPlans = output.valueForMoneyPlans.filter(p => p.planName !== baselinePlan?.planName);
+        valueForMoneyPlans = output.valueForMoneyPlans;
       }
     } catch (error) {
       console.error('AI value analysis failed, returning direct matches only.', error);
@@ -166,4 +171,5 @@ const MOCK_PLANS: Plan[] = [
   { provider: 'Airtel', planName: 'Basic 24D', price: 249, validity: 24, dailyData: 1, totalData: 24, otherBenefits: 'Watch free TV shows, Movies, Live channels and much more', rechargeLink: 'https://www.airtel.in/recharge/prepaid' },
 ];
 
+    
     
