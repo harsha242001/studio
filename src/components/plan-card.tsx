@@ -1,18 +1,17 @@
 'use client';
 
-import type { SuggestRechargePlansOutput } from '@/ai/schemas';
+import type { Plan } from '@/ai/schemas';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Wifi, CalendarDays, IndianRupee, Gift, ArrowRight, Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-type Plan = SuggestRechargePlansOutput['suggestedPlans'][0] & { reasoning?: string };
-
-interface PlanCardProps {
-  plan: Plan;
+// This type alias correctly handles the plan structure from all sources, including the AI output.
+type PlanCardProps = {
+  plan: Plan & { reasoning?: string };
   isFeatured?: boolean;
-}
+};
 
 export function PlanCard({ plan, isFeatured = false }: PlanCardProps) {
   return (
