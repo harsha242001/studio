@@ -15,6 +15,10 @@ import type {
   Plan,
 } from '@/ai/schemas';
 import {
+  SuggestRechargePlansInputSchema,
+  SuggestRechargePlansOutputSchema,
+} from '@/ai/schemas';
+import {
   findExactMatchPlanTool,
   findValueForMoneyPlansTool,
 } from '@/ai/tools/recharge-tools';
@@ -30,8 +34,8 @@ export async function suggestRechargePlans(
 const suggestRechargePlansFlow = ai.defineFlow(
   {
     name: 'suggestRechargePlansFlow',
-    inputSchema: {} as any, // We are not using a single schema for the flow input anymore
-    outputSchema: {} as any, // We are constructing the output manually
+    inputSchema: SuggestRechargePlansInputSchema,
+    outputSchema: SuggestRechargePlansOutputSchema,
   },
   async (input) => {
     const numericInput = {
