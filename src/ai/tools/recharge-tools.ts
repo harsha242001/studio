@@ -91,7 +91,9 @@ export const findValueForMoneyPlansTool = ai.defineTool(
             2
           )} vs ₹${baselineCostPerDay.toFixed(
             2
-          )}). You could save approximately ₹${yearlySavings.toFixed(
+          )}). With daily savings of ~₹${savingsPerDay.toFixed(
+            2
+          )}, you could save approximately ₹${yearlySavings.toFixed(
             0
           )} over a year.`,
         };
