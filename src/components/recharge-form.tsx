@@ -86,7 +86,7 @@ export function RechargeForm({ onSubmit, isLoading }: RechargeFormProps) {
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Select validity period" />
-                    </Trigger>
+                    </SelectTrigger> 
                   </FormControl>
                   <SelectContent>
                     {validityOptions.map((option) => (

@@ -1,5 +1,3 @@
-'use server';
-
 import type {SuggestRechargePlansInput, Plan} from '@/ai/schemas';
 
 export const MOCK_PLANS: Plan[] = [
