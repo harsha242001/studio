@@ -270,7 +270,8 @@ export async function getLiveRechargePlans(
       ...plan,
       score: Math.abs(plan.validity - validityDays),
     }))
-    .sort((a, b) => a.score - b.score);
+    .sort((a, b) => a.score - b.score)
+    .slice(0, 5); // Return top 5 similar plans
 
   return {exactMatchPlans, similarPlans};
 }
