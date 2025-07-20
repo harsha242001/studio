@@ -70,6 +70,7 @@ const valueAnalysisPrompt = ai.definePrompt({
   - Plan Name: {{baselinePlan.planName}}
   - Price: ₹{{baselinePlan.price}} for {{baselinePlan.validity}} days ({{baselinePlan.dailyData}} GB/day)
   - Cost per day: ₹{{divide baselinePlan.price baselinePlan.validity}}
+  - Total Cost for 365 days (if recharged repeatedly): ₹{{multiply (divide baselinePlan.price baselinePlan.validity) 365}}
   {{else}}
   No direct match was found for the user's request.
   {{/if}}
@@ -80,17 +81,17 @@ const valueAnalysisPrompt = ai.definePrompt({
   {{/each}}
 
   Your Analysis Steps:
-  1.  **Analyze the Baseline:** If a baseline plan is provided, calculate its cost per day. This is your primary benchmark. If no baseline is provided, you cannot perform an analysis, so return an empty list.
+  1.  **Analyze the Baseline:** If a baseline plan is provided, calculate its cost per day and its total cost over a 365-day period. This is your primary benchmark. If no baseline is provided, you cannot perform an analysis, so return an empty list.
   2.  **Find Better Value:** Scrutinize the "Full list of available plans". Your goal is to find plans that are objectively better than the baseline. A plan is better if:
       - It has a lower cost per day for the same or more data.
-      - It offers significantly more data or longer validity for a marginally higher cost per day.
-      - It's a long-term plan (e.g., 84, 90, 365 days) that results in significant total savings compared to repeatedly recharging the baseline plan over the same period.
-  3.  **Generate Reasoning:** For each value plan you identify, you MUST write a compelling 'reasoning' statement. Be specific. Compare the cost per day or the total cost over a year directly against the baseline plan. For example: "This 84-day plan costs ₹9.8/day, which is cheaper than the baseline's ₹12.4/day, and you get the same data." or "Choosing this annual plan saves you ₹949 over a year compared to recharging the baseline monthly plan."
+      - It is a long-term plan (e.g., 84, 90, 365 days) that results in significant total savings compared to repeatedly recharging the baseline plan over the same period. **You MUST actively look for an annual plan (365 days) and calculate the total savings compared to the baseline's annual cost.**
+  3.  **Generate Reasoning:** For each value plan you identify, you MUST write a compelling 'reasoning' statement. Be specific. **For long-term plans, you MUST calculate the total money saved over the year and state it clearly.** For example: "Choosing this annual plan saves you over ₹1,200 a year compared to recharging the 28-day plan every month."
   4.  **Output:** Populate the 'valueForMoneyPlans' list with your findings. If no plans offer a clear advantage over the baseline, return an empty list. Do not include the baseline plan in your output.
   `,
   template: {
     helpers: {
       divide: (a: number, b: number) => (b === 0 ? 0 : a / b).toFixed(2),
+      multiply: (a: number, b: number) => (a * b).toFixed(0),
     },
   },
 });
