@@ -9,11 +9,10 @@
  */
 
 import {ai} from '@/ai/genkit';
-import {
+import type {
   SuggestRechargePlansInput,
-  SuggestRechargePlansInputSchema,
   SuggestRechargePlansOutput,
-  SuggestRechargePlansOutputSchema,
+  Plan,
 } from '@/ai/schemas';
 import {
   findExactMatchPlanTool,
@@ -27,33 +26,12 @@ export async function suggestRechargePlans(
   return suggestRechargePlansFlow(input);
 }
 
-const suggestionPrompt = ai.definePrompt({
-  name: 'suggestionPrompt',
-  input: {schema: SuggestRechargePlansInputSchema},
-  output: {schema: SuggestRechargePlansOutputSchema},
-  tools: [findExactMatchPlanTool, findValueForMoneyPlansTool],
-  prompt: `You are a helpful assistant for finding mobile recharge plans.
-
-  User Preferences:
-  - Daily Data Usage: {{dailyDataUsageGB}} GB/day
-  - Validity: {{validityDays}} days
-  - Telecom Provider: {{telecomProvider}}
-  {{#if location}}- Location: {{location}}{{/if}}
-
-  Follow these steps:
-  1.  First, use the 'findExactMatchPlanTool' to find a plan that exactly matches the user's daily data and validity preference.
-  2.  If an exact match is found, use it as the baseline for the next step.
-  3.  Next, use the 'findValueForMoneyPlansTool'. Provide it with all the user's preferences AND the baseline plan you just found. This tool will find long-term plans that are cheaper per day.
-  4.  Return all the plans you've found in the correct output format. You don't need to find similar plans; the tools handle that.
-  `,
-});
-
 // Define the main flow.
 const suggestRechargePlansFlow = ai.defineFlow(
   {
     name: 'suggestRechargePlansFlow',
-    inputSchema: SuggestRechargePlansInputSchema,
-    outputSchema: SuggestRechargePlansOutputSchema,
+    inputSchema: {} as any, // We are not using a single schema for the flow input anymore
+    outputSchema: {} as any, // We are constructing the output manually
   },
   async (input) => {
     const numericInput = {
@@ -62,11 +40,27 @@ const suggestRechargePlansFlow = ai.defineFlow(
       validityDays: Number(input.validityDays),
     };
 
-    const {output} = await suggestionPrompt(numericInput);
+    // Step 1: Find the exact match plan.
+    const exactMatchResult = await findExactMatchPlanTool(numericInput);
+    const exactMatchPlan = exactMatchResult.exactMatchPlan;
 
-    if (!output) {
-      throw new Error('The AI failed to generate a response.');
+    let valueForMoneyPlans: (Plan & { reasoning: string })[] = [];
+
+    // Step 2: If an exact match is found, find value-for-money plans.
+    if (exactMatchPlan) {
+      const valueAnalysisResult = await findValueForMoneyPlansTool({
+        ...numericInput,
+        baselinePlan: exactMatchPlan,
+      });
+      valueForMoneyPlans = valueAnalysisResult.valueForMoneyPlans;
     }
+
+    // Step 3: Construct the final output.
+    const output: SuggestRechargePlansOutput = {
+      exactMatchPlans: exactMatchPlan ? [exactMatchPlan] : [],
+      valueForMoneyPlans: valueForMoneyPlans,
+      similarPlans: [], // This field is not being populated by the tools anymore.
+    };
 
     return output;
   }
