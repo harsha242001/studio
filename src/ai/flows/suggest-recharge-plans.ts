@@ -20,26 +20,27 @@ import {
 import {getLiveRechargePlans} from '@/services/telecom-service';
 import {z} from 'zod';
 
-// Define the schema for the AI's analysis. It receives the user's preferences
-// and the full list of available plans.
+// Define the schema for the AI's analysis. It now receives the user's preferences,
+// the full list of available plans, and a specific "baseline" plan to compare against.
 const ValueAnalysisInputSchema = SuggestRechargePlansInputSchema.extend({
   allPlans: z.array(PlanSchema),
+  baselinePlan: PlanSchema.optional().describe('The best direct-match plan found for the user\'s request. Use this as the primary basis for comparison.'),
 });
 
-// The AI's output is now ONLY the value-for-money plans.
+// The AI's output remains the value-for-money plans.
 const ValueAnalysisOutputSchema = z.object({
   valueForMoneyPlans: z.array(
     PlanSchema.extend({
       reasoning: z
         .string()
         .describe(
-          'A brief explanation of why this plan offers better long-term value, including the potential savings compared to recharging a shorter-term plan over the same period.'
+          'A brief explanation of why this plan offers better long-term value compared to the baseline plan, including specific cost-per-day calculations or total savings.'
         ),
     })
   ),
 });
 
-// The main function that the UI calls. It now orchestrates the process.
+// The main function that the UI calls.
 export async function suggestRechargePlans(
   input: SuggestRechargePlansInput
 ): Promise<SuggestRechargePlansOutput> {
@@ -47,37 +48,47 @@ export async function suggestRechargePlans(
 }
 
 // Define the prompt for the AI's value analysis task.
-// Its only job is to find long-term deals.
+// Its only job is to find long-term deals compared to a specific baseline.
 const valueAnalysisPrompt = ai.definePrompt({
   name: 'valueAnalysisPrompt',
   input: {schema: ValueAnalysisInputSchema},
   output: {schema: ValueAnalysisOutputSchema},
-  prompt: `You are a recharge plan recommendation expert. Your ONLY goal is to find "hidden gems" in a list of plans that offer better long-term value.
+  prompt: `You are a meticulous financial analyst for a telecom comparison app. Your task is to find "hidden gem" plans that offer superior value compared to a user's baseline choice.
 
   User Preferences:
   - Daily Data Usage: {{dailyDataUsageGB}} GB/day
   - Validity: {{validityDays}} days
   - Telecom Provider: {{telecomProvider}}
 
-  Full list of available plans:
+  {{#if baselinePlan}}
+  User's Best Direct Match (Baseline for Comparison):
+  - Plan Name: {{baselinePlan.planName}}
+  - Price: ₹{{baselinePlan.price}} for {{baselinePlan.validity}} days ({{baselinePlan.dailyData}} GB/day)
+  - Cost per day: ₹{{divide baselinePlan.price baselinePlan.validity}}
+  {{else}}
+  No direct match was found for the user's request.
+  {{/if}}
+
+  Full list of available plans for the provider:
   {{#each allPlans}}
-  - {{this.planName}}: ₹{{this.price}} for {{this.validity}} days with {{this.dailyData}} GB/day.
+  - {{this.planName}}: ₹{{this.price}} for {{this.validity}} days with {{this.dailyData}} GB/day. (Cost per day: ₹{{divide this.price this.validity}})
   {{/each}}
 
-  Follow these steps carefully:
-
-  Step 1: Perform Value-for-Money Analysis
-  This is your only task. Analyze ALL plans in the provided list to find plans that offer better long-term value.
-  - Look for any long-validity plans (e.g., 365 days, 90 days, 84 days).
-  - Compare their cost-effectiveness against shorter-term plans. For example, calculate the cost of recharging a 28-day plan multiple times to cover the period of an 84-day or 365-day plan.
-  - A plan is a "value-for-money" option if it is cheaper over time OR offers significantly better benefits (like more data) for a similar or slightly higher long-term cost.
-
-  Step 2: Populate Value-for-Money Suggestions
-  - If you find one or two plans that offer significant long-term savings or benefits, add them to the 'valueForMoneyPlans' list.
-  - For each plan in this list, you MUST write a clear 'reasoning' statement. Explain the long-term benefit and the potential savings. For example: "This annual plan costs ₹3599, saving you over ₹280 compared to recharging the ₹299 monthly plan for a year, and you get more data!".
-  - Do NOT add plans to this list unless they offer a clear, financial advantage over time.
-  - If no plans offer significant long-term value, return an empty list.
+  Your Analysis Steps:
+  1.  **Analyze the Baseline:** If a baseline plan is provided, calculate its cost per day. This is your primary benchmark.
+  2.  **Find Better Value:** Scrutinize the "Full list of available plans". Your goal is to find plans that are objectively better than the baseline. A plan is better if:
+      - It has a lower cost per day for the same or more data.
+      - It offers significantly more data or longer validity for a marginally higher cost per day.
+      - It's a long-term plan (e.g., 84, 90, 365 days) that results in significant total savings compared to repeatedly recharging the baseline plan over the same period.
+  3.  **Generate Reasoning:** For each value plan you identify, you MUST write a compelling 'reasoning' statement. Be specific. Compare the cost per day or the total cost over a year directly against the baseline plan. For example: "This 84-day plan costs ₹9.8/day, which is cheaper than the baseline's ₹10.6/day, and you get the same data." or "Choosing this annual plan saves you ₹949 over a year compared to recharging the baseline monthly plan."
+  4.  **Output:** Populate the 'valueForMoneyPlans' list with your findings. If no plans offer a clear advantage over the baseline, return an empty list. Do not include the baseline plan in your output.
   `,
+  // Register a Handlebars helper to perform division.
+  template: {
+    helpers: {
+      divide: (a: number, b: number) => (b === 0 ? 0 : (a / b).toFixed(2)),
+    }
+  }
 });
 
 // Define the main flow.
@@ -88,23 +99,28 @@ const suggestRechargePlansFlow = ai.defineFlow(
     outputSchema: SuggestRechargePlansOutputSchema,
   },
   async (input) => {
-    // Step 1: Get all relevant plans using our reliable TypeScript function.
-    // This gives us categorized lists of exact and similar matches.
+    // Step 1: Get categorized plans using our reliable TypeScript function.
     const { exactMatchPlans, similarPlans } = await getLiveRechargePlans(input);
 
-    // Step 2: Ask the AI to perform only the value analysis.
-    // We pass the user's input and the full list of plans to the AI.
+    // Identify the best exact match to use as a baseline for the AI.
+    // If multiple exact matches exist, we'll pick the first one.
+    const baselinePlan = exactMatchPlans.length > 0 ? exactMatchPlans[0] : undefined;
+
+    // Step 2: Ask the AI to perform only the value analysis, anchored to our baseline.
     let valueForMoneyPlans: SuggestRechargePlansOutput['valueForMoneyPlans'] = [];
     try {
-      // For value analysis, we need ALL plans, not just the pre-filtered ones
+      // For value analysis, we need ALL plans for the provider.
       const allProviderPlans = MOCK_PLANS.filter(p => p.provider.toLowerCase() === input.telecomProvider.toLowerCase());
       
       const {output} = await valueAnalysisPrompt({
         ...input,
         allPlans: allProviderPlans,
+        baselinePlan: baselinePlan,
       });
+
       if (output) {
-        valueForMoneyPlans = output.valueForMoneyPlans;
+        // Filter out the baseline plan from the AI's suggestions if it happens to be there.
+        valueForMoneyPlans = output.valueForMoneyPlans.filter(p => p.planName !== baselinePlan?.planName);
       }
     } catch (error) {
       console.error('AI value analysis failed, returning direct matches only.', error);
@@ -149,5 +165,3 @@ const MOCK_PLANS: Plan[] = [
   { provider: 'Airtel', planName: 'HelloTunes 28D 1GB', price: 299, validity: 28, dailyData: 1, totalData: 28, otherBenefits: 'Free hellotunes for you', rechargeLink: 'https://www.airtel.in/recharge/prepaid' },
   { provider: 'Airtel', planName: 'Basic 24D', price: 249, validity: 24, dailyData: 1, totalData: 24, otherBenefits: 'Watch free TV shows, Movies, Live channels and much more', rechargeLink: 'https://www.airtel.in/recharge/prepaid' },
 ];
-
-    
