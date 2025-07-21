@@ -69,33 +69,29 @@ export const findValueForMoneyPlansTool = ai.defineTool(
       (p) => p.provider.toLowerCase() === telecomProvider.toLowerCase()
     );
 
-    const baselineCostPerDay = baselinePlan.price / baselinePlan.validity;
-
     const valueForMoneyPlans = providerPlans
       .filter((p) => {
         // Must provide at least the same amount of daily data
         if (p.dailyData < dailyDataUsageGB) return false;
         // Must be a different plan
         if (p.planName === baselinePlan.planName) return false;
+        // Must be a longer validity plan
+        if (p.validity <= baselinePlan.validity) return false;
         // Must have a lower cost per day
         const currentPlanCostPerDay = p.price / p.validity;
+        const baselineCostPerDay = baselinePlan.price / baselinePlan.validity;
         return currentPlanCostPerDay < baselineCostPerDay;
       })
       .map((p) => {
-        const costPerDay = p.price / p.validity;
-        const savingsPerDay = baselineCostPerDay - costPerDay;
-        const yearlySavings = savingsPerDay * 365;
+        // More accurate calculation based on user feedback
+        const extrapolatedBaselineCost = (baselinePlan.price / baselinePlan.validity) * p.validity;
+        const savings = extrapolatedBaselineCost - p.price;
+        const baselineCostPerDay = baselinePlan.price / baselinePlan.validity;
+        const valueCostPerDay = p.price / p.validity;
+        
         return {
           ...p,
-          reasoning: `This plan is cheaper per day (₹${costPerDay.toFixed(
-            2
-          )} vs ₹${baselineCostPerDay.toFixed(
-            2
-          )}). With daily savings of ~₹${savingsPerDay.toFixed(
-            2
-          )}, you could save approximately ₹${yearlySavings.toFixed(
-            0
-          )} over a year.`,
+          reasoning: `This plan is cheaper per day (₹${valueCostPerDay.toFixed(2)} vs ₹${baselineCostPerDay.toFixed(2)}). By choosing this ${p.validity}-day plan, you could save approximately ₹${savings.toFixed(0)} compared to repeatedly buying the ${baselinePlan.validity}-day plan.`,
         };
       })
       .sort((a, b) => a.price / a.validity - b.price / b.validity); // Sort by best value (lowest cost per day)
