@@ -77,7 +77,7 @@ export const findValueForMoneyPlansTool = ai.defineTool(
         if (p.planName === baselinePlan.planName) return false;
         // Must be a longer validity plan
         if (p.validity <= baselinePlan.validity) return false;
-        // Must have a lower cost per day
+        // Must have a lower cost per day (a good proxy for value)
         const currentPlanCostPerDay = p.price / p.validity;
         const baselineCostPerDay = baselinePlan.price / baselinePlan.validity;
         return currentPlanCostPerDay < baselineCostPerDay;
@@ -86,12 +86,10 @@ export const findValueForMoneyPlansTool = ai.defineTool(
         // More accurate calculation based on user feedback
         const extrapolatedBaselineCost = (baselinePlan.price / baselinePlan.validity) * p.validity;
         const savings = extrapolatedBaselineCost - p.price;
-        const baselineCostPerDay = baselinePlan.price / baselinePlan.validity;
-        const valueCostPerDay = p.price / p.validity;
         
         return {
           ...p,
-          reasoning: `This plan is cheaper per day (₹${valueCostPerDay.toFixed(2)} vs ₹${baselineCostPerDay.toFixed(2)}). By choosing this ${p.validity}-day plan, you could save approximately ₹${savings.toFixed(0)} compared to repeatedly buying the ${baselinePlan.validity}-day plan.`,
+          reasoning: `By choosing this ${p.validity}-day plan, you could save approximately ₹${savings.toFixed(0)} compared to repeatedly buying the ${baselinePlan.validity}-day plan (which would cost ~₹${extrapolatedBaselineCost.toFixed(0)}).`,
         };
       })
       .sort((a, b) => a.price / a.validity - b.price / b.validity); // Sort by best value (lowest cost per day)
