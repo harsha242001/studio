@@ -91,7 +91,7 @@ export const findValueForMoneyPlansTool = ai.defineTool(
         
         return {
           ...p,
-          reasoning: `By choosing this ${p.validity}-day plan, you could save approximately ₹${savings.toFixed(0)} compared to repeatedly buying the ${baselinePlan.validity}-day plan for the same period (which would cost ~₹${extrapolatedBaselineCost.toFixed(0)}).`,
+          reasoning: `Choosing this ${p.validity}-day plan for ₹${p.price} is cheaper than buying the ${baselinePlan.validity}-day plan ${numRecharges} times (which would cost ₹${extrapolatedBaselineCost}). You save ₹${savings.toFixed(0)}.`,
         };
       })
       .sort((a, b) => a.price / a.validity - b.price / b.validity); // Sort by best value (lowest cost per day)
