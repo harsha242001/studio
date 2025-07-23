@@ -34,12 +34,11 @@ const AnalysisPromptInputSchema = SuggestRechargePlansInputSchema.extend({
 });
 
 // Define the comprehensive analysis prompt.
-const analysisPrompt = ai.definePrompt(
-  {
-    name: 'rechargeAnalysisPrompt',
-    input: {schema: AnalysisPromptInputSchema},
-    output: {schema: SuggestRechargePlansOutputSchema},
-    prompt: `
+const analysisPrompt = ai.definePrompt({
+  name: 'rechargeAnalysisPrompt',
+  input: {schema: AnalysisPromptInputSchema},
+  output: {schema: SuggestRechargePlansOutputSchema},
+  prompt: `
       You are an expert telecom plan analyst. Your task is to analyze a list of available recharge plans and suggest the best options to a user based on their preferences.
 
       User Preferences:
@@ -67,12 +66,9 @@ const analysisPrompt = ai.definePrompt(
           - Your reasoning MUST include the specific calculation. For example: "Choosing this 84-day plan for ₹859 is cheaper than buying the 28-day plan 3 times (which would cost ₹1047). You save ₹188."
           - Identify up to two such plans that offer the best savings and list them. Ensure you consider all plans with longer validity, including those with irregular validities (e.g., 77 days, 90 days).
     `,
-  },
-  {
-    model: 'googleai/gemini-2.0-flash',
-    output: {format: 'json'},
-  }
-);
+  model: 'googleai/gemini-2.0-flash',
+  output: {format: 'json'},
+});
 
 // Define the main flow that orchestrates the process.
 const suggestRechargePlansFlow = ai.defineFlow(
